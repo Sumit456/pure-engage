@@ -34,6 +34,15 @@ test('idempotency_key de-duplicates, within and across requests', async () => {
   expect(await ctx.db.selectFrom('events').selectAll().execute()).toHaveLength(1);
 });
 
+test("an API caller's key can't pre-empt a key the platform mints", async () => {
+  // Without namespacing, this would make the real PureNet event look like a duplicate and drop it.
+  await track({ events: [{ external_id: 'MBR-TEST-0003', name: 'spoof', idempotency_key: 'purenet:evt_test_0099' }] });
+  const e = await ctx.app.services.events.track({ external_id: 'MBR-TEST-0003', name: 'purenet.appointment.booked', properties: {}, idempotency_key: 'purenet:evt_test_0099' }, { source: 'purenet', actor: { type: 'system', id: 'test' } });
+  expect(e.duplicate).toBe(false);
+  expect((await ctx.db.selectFrom('events').select('idempotency_key').orderBy('idempotency_key').execute()).map((r) => r.idempotency_key))
+    .toEqual(['api:purenet:evt_test_0099', 'purenet:evt_test_0099']);
+});
+
 test('an event for an unknown external_id creates the contact', async () => {
   await track({ events: [{ external_id: 'MBR-TEST-NEW', name: 'signup', time: '2026-01-01T08:00:00Z' }] });
   const c = await ctx.db.selectFrom('contacts').selectAll().where('external_id', '=', 'MBR-TEST-NEW').executeTakeFirstOrThrow();

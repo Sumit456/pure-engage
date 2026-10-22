@@ -44,9 +44,12 @@ export const messageRoutes: FastifyPluginAsync = async (app) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params);
     const msg = await delivery.get(id);
     await audit(app.deps.db, actorOf(req), { action: 'message.view', entityType: 'message', entityId: id });
-    // Viewing in the console must not count as the recipient opening it: drop the open pixel from the preview copy.
-    const preview = msg.body_html?.replace(/<img[^>]+\/t\/o\/[^>]+>/gi, '') ?? null;
-    return { ...msg, body_html_preview: preview };
+    // The stored body carries the recipient's signed links. Viewers get a copy without them: no open pixel (viewing
+    // must not count as an open), click links pointing straight at their destination, and no unsubscribe link
+    // (a viewer could otherwise opt the member out).
+    const { body_html, ...rest } = msg;
+    const { signer } = app.services;
+    return { ...rest, body_text: msg.body_text && signer.redact(msg.body_text, 'text'), body_html_preview: body_html && signer.redact(body_html, 'html') };
   });
 
   app.get('/api/delivery/status', { preHandler: requireUser('viewer') }, async () => ({
@@ -70,7 +73,7 @@ export const messageRoutes: FastifyPluginAsync = async (app) => {
         const contact = r.contact_id
           ? await contacts.get(r.contact_id)
           : (await contacts.upsert({ external_id: r.external_id, email: r.email, ...(r.phone ? { phone: r.phone } : {}), ...r.attributes }, { source: 'api', actor })).contact;
-        const m = await delivery.enqueue({ contact, templateId: template.id, data: r.properties, source: 'api', idempotencyKey: r.idempotency_key, bypassQuietHours: body.bypass_quiet_hours && template.purpose === 'care' });
+        const m = await delivery.enqueue({ contact, templateId: template.id, data: r.properties, source: 'api', idempotencyKey: r.idempotency_key && `api:${r.idempotency_key}`, bypassQuietHours: body.bypass_quiet_hours && template.purpose === 'care' });
         results.push({ contact_id: contact.id, message_id: m.id, status: m.status, reason: m.status_reason });
       } catch (err) {
         if (err instanceof HttpError && err.statusCode < 500) results.push({ error: err.message });

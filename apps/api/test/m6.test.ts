@@ -99,7 +99,7 @@ describe('SSRF protection', () => {
   test('plain http is refused; https to a private or loopback address is blocked at send time', async () => {
     await expect(ctx.app.services.webhooks.create({ name: 'x', url: 'http://example.com/hook' }, SYS)).rejects.toMatchObject({ statusCode: 400 });
     await expect(ctx.app.services.webhooks.create({ name: 'x', url: 'https://user:pw@example.com/hook' }, SYS)).rejects.toMatchObject({ statusCode: 400 });
-    for (const url of ['https://127.0.0.1/hook', 'https://169.254.169.254/latest/meta-data', 'https://[::1]/hook', 'https://10.1.2.3/x']) {
+    for (const url of ['https://127.0.0.1/hook', 'https://169.254.169.254/latest/meta-data', 'https://[::1]/hook', 'https://10.1.2.3/x', 'https://[64:ff9b::a9fe:a9fe]/x', 'https://[2002:a9fe:a9fe::1]/x']) {
       const hook = await ctx.app.services.webhooks.create({ name: 'x', url }, SYS);
       const d = await ctx.app.services.webhooks.test(hook.id, SYS);
       expect(d.status).toBe('failed');
@@ -152,6 +152,8 @@ describe('reports, retention, SMS STOP and console hosting', () => {
     expect(toCsv(['n'], [[-5]])).toBe('n\r\n-5\r\n'); // numbers are not text, so no prefix
     expect(() => parseRange('2024-01-01', '2026-01-01', now)).toThrow();
     expect(parseRange(undefined, '2026-03-10', now)).toEqual({ from: '2026-02-09', to: '2026-03-10' });
+    // 22:00 UTC is already the next day in Dubai, where messages are bucketed.
+    expect(parseRange(undefined, undefined, new Date('2026-03-10T22:00:00Z'), 'Asia/Dubai').to).toBe('2026-03-11');
   });
 
   test('retention clears old message bodies but keeps delivery metadata, at most daily', async () => {

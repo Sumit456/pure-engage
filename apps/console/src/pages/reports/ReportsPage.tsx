@@ -9,13 +9,14 @@ import { ErrorBanner, Spinner, TextField } from '../../components/ui.tsx';
 import { CampaignStatusBadge } from '../campaigns/CampaignsPage.tsx';
 import { JourneyStatusBadge } from '../journeys/JourneysPage.tsx';
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
-const daysAgo = (n: number) => iso(new Date(Date.now() - n * 86_400_000));
+const daysBefore = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) - n * 86_400_000).toISOString().slice(0, 10);
 
 export function ReportsPage() {
   const { t, i18n } = useTranslation();
-  const [range, setRange] = useState({ from: daysAgo(29), to: iso(new Date()) });
-  const qs = `from=${range.from}&to=${range.to}`;
+  // No range until the user picks one: the API defaults to the last 30 days ending today in the platform's time
+  // zone (the browser's clock and zone can't be trusted to agree with it).
+  const [range, setRange] = useState<{ from: string; to: string } | null>(null);
+  const qs = range ? `from=${range.from}&to=${range.to}` : '';
   const messages = useQuery({ queryKey: ['report', 'messages', qs], queryFn: ({ signal }) => api<MessagesReport>(`/api/reports/messages?${qs}`, { signal }) });
   const campaigns = useQuery({ queryKey: ['report', 'campaigns', qs], queryFn: ({ signal }) => api<{ data: CampaignReportRow[] }>(`/api/reports/campaigns?${qs}`, { signal }) });
   const journeys = useQuery({ queryKey: ['report', 'journeys'], queryFn: ({ signal }) => api<{ data: JourneyReportRow[] }>('/api/reports/journeys', { signal }) });
@@ -32,7 +33,9 @@ export function ReportsPage() {
   const dayFmt = new Intl.DateTimeFormat(i18n.language === 'ar' ? 'ar-AE' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
   const num = (n: number) => n.toLocaleString(i18n.language);
   const pct = (a: number, b: number) => (b ? new Intl.NumberFormat(i18n.language, { style: 'percent', maximumFractionDigits: 1 }).format(a / b) : '—');
-  const preset = (n: number) => setRange({ from: daysAgo(n - 1), to: iso(new Date()) });
+  const shown = range ?? (messages.data ? { from: messages.data.from, to: messages.data.to } : null);
+  const today = messages.data?.today;
+  const preset = (n: number) => today && setRange({ from: daysBefore(today, n - 1), to: today });
 
   return (
     <section className="pe-stack">
@@ -40,9 +43,9 @@ export function ReportsPage() {
         <h1>{t('nav.reports')}</h1>
         <span className="pe-spacer" />
         <div className="pe-row" role="group" aria-label={t('reports.range')}>
-          {[7, 30, 90].map((n) => <button key={n} type="button" className="pe-button pe-button--ghost" onClick={() => preset(n)}>{t('reports.lastDays', { n })}</button>)}
-          <TextField label={t('reports.from')} type="date" value={range.from} max={range.to} onChange={(e) => e.target.value && setRange({ ...range, from: e.target.value })} />
-          <TextField label={t('reports.to')} type="date" value={range.to} min={range.from} onChange={(e) => e.target.value && setRange({ ...range, to: e.target.value })} />
+          {[7, 30, 90].map((n) => <button key={n} type="button" className="pe-button pe-button--ghost" disabled={!today} onClick={() => preset(n)}>{t('reports.lastDays', { n })}</button>)}
+          <TextField label={t('reports.from')} type="date" value={shown?.from ?? ''} max={shown?.to} disabled={!shown} onChange={(e) => shown && e.target.value && setRange({ ...shown, from: e.target.value })} />
+          <TextField label={t('reports.to')} type="date" value={shown?.to ?? ''} min={shown?.from} disabled={!shown} onChange={(e) => shown && e.target.value && setRange({ ...shown, to: e.target.value })} />
         </div>
       </div>
       <ErrorBanner error={messages.error} />

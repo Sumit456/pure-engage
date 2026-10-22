@@ -8,7 +8,7 @@ info:
     (apps/api/src/services/webhooks.ts, apps/api/test/m6.test.ts). Retries follow the backoff 1m, 5m, 30m, 2h, 6h
     (6 attempts in total), and any non-2xx response counts as a failure. Payloads carry identifiers only, never
     profile data.
-  x-evidence: { status: CONFIRMED, source: 'purenet-platform apps/api/src/services/webhooks.ts; apps/api/test/m6.test.ts' }
+  x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/services/webhooks.ts; apps/api/test/m6.test.ts' }
 defaultContentType: application/json
 channels:
   subscriberEndpoint:
@@ -17,7 +17,7 @@ channels:
     parameters:
       subscriberUrl:
         description: Subscriber HTTPS URL. Private/loopback destinations are blocked and the connection is pinned to the checked address (apps/api/src/services/net.ts).
-    x-evidence: { status: CONFIRMED, source: 'purenet-platform apps/api/src/services/net.ts; apps/api/test/m6.test.ts (SSRF protection)' }
+    x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/services/net.ts; apps/api/test/m6.test.ts (SSRF protection)' }
     messages:
       event: { $ref: '#/components/messages/event' }
 operations:
@@ -25,7 +25,7 @@ operations:
     action: send
     channel: { $ref: '#/channels/subscriberEndpoint' }
     summary: Deliver a recorded event that matches the webhook's event filter (`*` or a list of names).
-    x-evidence: { status: CONFIRMED, source: 'purenet-platform apps/api/src/services/webhooks.ts (enqueueForEvent); apps/api/test/m6.test.ts' }
+    x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/services/webhooks.ts (enqueueForEvent); apps/api/test/m6.test.ts' }
     messages:
       - $ref: '#/channels/subscriberEndpoint/messages/event'
 components:
@@ -33,7 +33,7 @@ components:
     event:
       name: event
       title: Platform event
-      x-evidence: { status: CONFIRMED, source: 'purenet-platform apps/api/test/m6.test.ts' }
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/test/m6.test.ts' }
       headers: { $ref: '#/components/schemas/Headers' }
       payload: { $ref: '#/components/schemas/Envelope' }
       examples:
@@ -48,7 +48,7 @@ components:
   schemas:
     Headers:
       type: object
-      x-evidence: { status: CONFIRMED, source: 'purenet-platform apps/api/test/m6.test.ts (signature verified with the shared secret)' }
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/test/m6.test.ts (signature verified with the shared secret)' }
       required: [X-PE-Event, X-PE-Delivery, X-PE-Signature]
       properties:
         X-PE-Event: { type: string }
@@ -59,7 +59,7 @@ components:
           pattern: '^t=\d+,v1=[0-9a-f]{64}$'
     Envelope:
       type: object
-      x-evidence: { status: CONFIRMED, source: 'purenet-platform apps/api/src/services/webhooks.ts; apps/api/test/m6.test.ts' }
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/services/webhooks.ts; apps/api/test/m6.test.ts' }
       required: [id, type, created_at, event, contact]
       properties:
         id: { type: string, format: uuid, description: Delivery id (equals X-PE-Delivery). }

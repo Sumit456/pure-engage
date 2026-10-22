@@ -8,10 +8,16 @@ export interface DayRow { day: string; channel: 'email' | 'sms'; sent: number; d
 
 const DAY_MS = 86_400_000;
 
-/** Validates an inclusive [from, to] date range (YYYY-MM-DD), at most 366 days. */
-export function parseRange(from: string | undefined, to: string | undefined, today: Date): { from: string; to: string } {
+/** The calendar date (YYYY-MM-DD) of an instant in a time zone. */
+export const localDate = (d: Date, timeZone: string) => new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+
+/**
+ * Validates an inclusive [from, to] date range (YYYY-MM-DD), at most 366 days. "Today" is taken in the reporting
+ * time zone, the same one days are bucketed in: in UTC, Dubai's evening messages would fall after the range.
+ */
+export function parseRange(from: string | undefined, to: string | undefined, now: Date, timeZone = 'UTC'): { from: string; to: string } {
   const iso = (d: Date) => d.toISOString().slice(0, 10);
-  const end = to ?? iso(today);
+  const end = to ?? localDate(now, timeZone);
   const start = from ?? iso(new Date(new Date(`${end}T00:00:00Z`).getTime() - 29 * DAY_MS));
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) throw badRequest('Dates must be YYYY-MM-DD');
   const span = (Date.parse(end) - Date.parse(start)) / DAY_MS;

@@ -35,5 +35,5 @@ older ones.
 - Runtime is Node ≥ 22.18 (type stripping on by default).
 - The brand is a placeholder until PureHealth's colours and fonts are confirmed. Swapping them is a
   one-file change in `apps/console/src/theme/tokens.css`.
-- The GitHub repo is still named `purenet-platform`. Renaming it to `pure-engage` needs the owner (GitHub
-  Settings). GitHub redirects the old URL afterwards.
+- The GitHub repo was renamed from `purenet-platform` to `Sumit456/pure-engage` on 2026-10-22. GitHub
+  redirects the old URL.

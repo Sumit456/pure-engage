@@ -11,7 +11,7 @@ Its ingest API, idempotency and webhook-signing patterns are useful prior art.
 
 Options:
 1. Put the platform in a new top-level folder or package inside the Orbit repo.
-2. Create a new repo (`Sumit456/purenet-platform`, private) that references Orbit.
+2. Create a new repo (`Sumit456/purenet-platform`, private; since renamed `Sumit456/pure-engage`) that references Orbit.
 
 ## Decision
 **Option 2.** The platform lives in its own private repo. Orbit is referenced by URL and pinned commit

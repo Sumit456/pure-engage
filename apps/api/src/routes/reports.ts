@@ -1,21 +1,23 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { requireUser } from '../plugins/auth.ts';
-import { parseRange, toCsv } from '../services/reports.ts';
+import { localDate, parseRange, toCsv } from '../services/reports.ts';
 
 const rangeQuery = z.object({ from: z.string().optional(), to: z.string().optional() });
 
 export const reportRoutes: FastifyPluginAsync = async (app) => {
   const { reports } = app.services;
   const viewer = { preHandler: requireUser('viewer') };
-  const range = (q: unknown) => { const { from, to } = rangeQuery.parse(q); return parseRange(from, to, app.deps.clock?.() ?? new Date()); };
+  const range = (q: unknown) => { const { from, to } = rangeQuery.parse(q); return parseRange(from, to, now(), tz); };
+  const tz = app.deps.config.PE_DEFAULT_TIMEZONE;
+  const now = () => app.deps.clock?.() ?? new Date();
   const csv = (name: string, body: string) => ({ 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${name}"`, 'cache-control': 'no-store', body });
 
   app.get('/api/reports/overview', viewer, async () => reports.overview());
   app.get('/api/reports/messages', viewer, async (req) => {
     const r = range(req.query);
     const [days, notSent] = await Promise.all([reports.daily(r), reports.notSentReasons(r)]);
-    return { ...r, days, not_sent: notSent };
+    return { ...r, today: localDate(now(), tz), days, not_sent: notSent };
   });
   app.get('/api/reports/campaigns', viewer, async (req) => ({ data: await reports.campaigns(range(req.query)) }));
   app.get('/api/reports/journeys', viewer, async () => ({ data: await reports.journeys() }));

@@ -135,7 +135,7 @@ export interface Overview {
   campaigns_sent: number;
 }
 export interface DayRow { day: string; channel: Channel; sent: number; delivered: number; opened: number; clicked: number; failed: number; not_sent: number }
-export interface MessagesReport { from: string; to: string; days: DayRow[]; not_sent: { reason: string; count: number }[] }
+export interface MessagesReport { from: string; to: string; today: string; days: DayRow[]; not_sent: { reason: string; count: number }[] }
 export interface CampaignReportRow { id: string; name: string; status: CampaignStatus; completed_at: string | null; channel: Channel; targeted: number; sent: number; opened: number; clicked: number; not_sent: number }
 export interface JourneyReportRow { id: string; name: string; status: JourneyStatus; runs: number; active: number; completed: number; exited: number }
 export interface WebhookSummary { id: string; name: string; url: string; events: string[]; enabled: boolean; created_at: string; updated_at: string }

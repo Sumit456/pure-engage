@@ -317,11 +317,25 @@ describe('console message views', () => {
     const c = await makeContact(ctx.app, { external_id: 'MBR-TEST-40', email: 'v@example.com', consent: consentAll });
     const m = await ctx.app.services.delivery.enqueue({ contact: c, templateId: t.id, source: 'test' });
     const res = (await viewer.request({ method: 'GET', url: `/api/messages/${m.id}` })).json();
-    expect(res.body_html).toContain('/t/o/');
+    expect(res).not.toHaveProperty('body_html');
     expect(res.body_html_preview).not.toContain('/t/o/');
+    expect(res.body_html_preview).not.toContain('/t/c/');
+    expect(res.body_html_preview).toContain('href="https://example.com/appointments');
     const list = (await viewer.request({ method: 'GET', url: `/api/messages?contact_id=${c.id}` })).json();
     expect(list.data[0]).toMatchObject({ id: m.id, template_name: 'Appointment confirmation', status: 'queued' });
     expect(list.data[0]).not.toHaveProperty('body_html');
     expect(await ctx.db.selectFrom('audit_log').select('action').where('action', '=', 'message.view').execute()).toHaveLength(1);
+  });
+
+  test('a viewer never receives the signed unsubscribe link', async () => {
+    await truncateAll(ctx.db);
+    const { loginAs } = await import('./helpers.ts');
+    const viewer = await loginAs(ctx.app, 'viewer');
+    const t = await makeTemplate(ctx.app, emailTemplate({ name: 'Promo', purpose: 'marketing' }));
+    const c = await makeContact(ctx.app, { external_id: 'MBR-TEST-41', email: 'u@example.com', consent: consentAll });
+    const m = await ctx.app.services.delivery.enqueue({ contact: c, templateId: t.id, source: 'test' });
+    expect(m.body_html).toContain('/u/');
+    const raw = (await viewer.request({ method: 'GET', url: `/api/messages/${m.id}` })).body;
+    expect(raw).not.toMatch(/\/(u|t\/[oc])\/[0-9a-f-]{36}\./);
   });
 });

@@ -3,6 +3,8 @@
 import { createHmac } from 'node:crypto';
 import { safeEqual } from './crypto.ts';
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const mac = (secret: string, value: string) => createHmac('sha256', secret).update(value).digest('base64url').slice(0, 22);
 
 export function createLinkSigner(secret: string, publicUrl: string) {
@@ -23,6 +25,17 @@ export function createLinkSigner(secret: string, publicUrl: string) {
     clickUrl: (messageId: string, url: string) =>
       `${base}/t/c/${token(messageId)}?u=${encodeURIComponent(url)}&s=${mac(secret, `c:${messageId}:${url}`)}`,
     verifyClick: (messageId: string, url: string, sig: string) => safeEqual(sig, mac(secret, `c:${messageId}:${url}`)),
+    /** Removes every signed link from a rendered body so it can be shown to staff. */
+    redact(body: string, kind: 'html' | 'text'): string {
+      const b = escapeRe(base);
+      return body
+        .replace(new RegExp(`<img[^>]+${b}/t/o/[^>]+>`, 'gi'), '')
+        .replace(new RegExp(`${b}/t/c/[\\w.-]+\\?u=([^&"'\\s<>]+)(?:&amp;|&)s=[\\w-]+`, 'g'), (_, u: string) => {
+          const dest = decodeURIComponent(u);
+          return kind === 'html' ? escapeAttr(dest) : dest;
+        })
+        .replace(new RegExp(`${b}/(?:u|t/[oc])/[\\w.-]+`, 'g'), '#');
+    },
   };
 }
 
