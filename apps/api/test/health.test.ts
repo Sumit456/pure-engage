@@ -18,6 +18,6 @@ test('security headers are set', async () => {
 });
 
 test('migrations created the app_settings table', async () => {
-  const rows = await ctx.db.selectFrom('app_settings').selectAll().execute();
-  expect(rows).toEqual([]);
+  // Other test files' workers may already have written rows (retention); only the table's existence matters here.
+  await expect(ctx.db.selectFrom('app_settings').selectAll().execute()).resolves.toBeInstanceOf(Array);
 });

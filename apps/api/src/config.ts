@@ -21,6 +21,8 @@ const schema = z.object({
   // Optional first admin, created at startup only when there are no users yet.
   PE_ADMIN_EMAIL: z.string().email().optional(),
   PE_ADMIN_PASSWORD: z.string().optional(),
+  /** Seeds synthetic demo data at startup when there are no contacts yet (test deployments only). */
+  PE_SEED_DEMO: bool.default('false'),
 
   // ---- Delivery ----
   /** `sandbox` (default) never contacts a provider; `live` sends through SMTP/Twilio when configured. */
@@ -75,7 +77,10 @@ const DEV_TRACKING_SECRET = 'dev-only-tracking-secret-do-not-use-in-production';
 const DEV_SECRET_KEY_SEED = 'dev-only-secret-key-do-not-use-in-production';
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const parsed = schema.safeParse(Object.fromEntries(Object.entries(env).filter(([, v]) => v !== '')));
+  const set = Object.fromEntries(Object.entries(env).filter(([, v]) => v !== ''));
+  // On Render the service's public URL is provided as RENDER_EXTERNAL_URL.
+  if (!set.PE_PUBLIC_URL && set.RENDER_EXTERNAL_URL) set.PE_PUBLIC_URL = set.RENDER_EXTERNAL_URL;
+  const parsed = schema.safeParse(set);
   if (!parsed.success) {
     throw new Error(`Invalid configuration: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
   }
