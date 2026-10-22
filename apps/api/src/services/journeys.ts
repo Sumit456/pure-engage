@@ -25,6 +25,8 @@ export interface JourneyDeps {
   segments: SegmentsService;
   delivery: DeliveryService;
   clock: () => Date;
+  /** Other consumers of each event (e.g. outbound webhooks), run once per event before journeys. */
+  eventHooks?: ((event: Event) => Promise<void>)[];
   log?: (level: 'info' | 'warn' | 'error', msg: string, fields?: Record<string, unknown>) => void;
 }
 
@@ -36,7 +38,7 @@ export function parseDefinition(input: unknown): JourneyDefinition {
 
 const sameValue = (a: unknown, b: unknown) => a !== undefined && a !== null && String(a) === String(b);
 
-export function createJourneysService({ db, contacts, templates, segments, delivery, clock, log = () => {} }: JourneyDeps) {
+export function createJourneysService({ db, contacts, templates, segments, delivery, clock, eventHooks = [], log = () => {} }: JourneyDeps) {
   async function getRow(id: string) {
     const j = await db.selectFrom('journeys').selectAll().where('id', '=', id).executeTakeFirst();
     if (!j) throw notFound('Journey');
@@ -128,6 +130,7 @@ export function createJourneysService({ db, contacts, templates, segments, deliv
     return db.transaction().execute(async (tx) => {
       const batch = await tx.selectFrom('events').selectAll().where('processed_at', 'is', null).orderBy('received_at').orderBy('id').limit(limit).forUpdate().skipLocked().execute();
       for (const event of batch) {
+        for (const hook of eventHooks) await hook(event);
         await processEvent(event);
         await tx.updateTable('events').set({ processed_at: clock() }).where('id', '=', event.id).execute();
       }

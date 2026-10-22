@@ -18,6 +18,9 @@ import { messageRoutes } from './routes/messages.ts';
 import { publicRoutes } from './routes/public.ts';
 import { campaignRoutes, segmentRoutes } from './routes/campaigns.ts';
 import { journeyRoutes } from './routes/journeys.ts';
+import { reportRoutes } from './routes/reports.ts';
+import { webhookRoutes } from './routes/webhooks.ts';
+import { consoleRoutes } from './routes/console.ts';
 
 export interface AppDeps {
   config: Config;
@@ -69,7 +72,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     req.log.error(err);
     return reply.code(500).send({ error: 'Internal server error' });
   });
-  app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found' }));
+  if (!config.PE_CONSOLE_DIR) app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found' }));
 
   app.get('/healthz', async (_req, reply) => {
     try {
@@ -90,9 +93,13 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(segmentRoutes);
   await app.register(campaignRoutes);
   await app.register(journeyRoutes);
+  await app.register(reportRoutes);
+  await app.register(webhookRoutes);
   if (config.PURENET_WEBHOOK_SECRET) {
     await app.register(purenetRoutes, { webhookSecret: config.PURENET_WEBHOOK_SECRET, env: deps.purenetEnv });
   }
+
+  if (config.PE_CONSOLE_DIR) await app.register(consoleRoutes, { dir: config.PE_CONSOLE_DIR });
 
   return app;
 }

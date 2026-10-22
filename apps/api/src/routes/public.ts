@@ -53,6 +53,13 @@ export const publicRoutes: FastifyPluginAsync = async (app) => {
     return page(lang, 'Unsubscribed', lang === 'ar' ? '<h1>تم إلغاء الاشتراك</h1><p>لن تصلك رسائل تسويقية على هذه القناة.</p>' : '<h1>You are unsubscribed</h1><p>You won’t receive marketing messages on this channel.</p>');
   });
 
+  // Inbound SMS: reply STOP to opt out of SMS marketing. Twilio wants a TwiML response; an empty one sends nothing back.
+  app.post('/hooks/twilio/inbound', async (req, reply) => {
+    const { ok } = await delivery.twilioInbound(req.body as Record<string, string>, String(req.headers['x-twilio-signature'] ?? ''));
+    if (!ok) return reply.code(403).send();
+    return reply.header('content-type', 'text/xml').send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+  });
+
   app.post('/hooks/twilio/status', async (req, reply) => {
     const ok = await delivery.twilioStatus(req.body as Record<string, string>, String(req.headers['x-twilio-signature'] ?? ''));
     return reply.code(ok ? 204 : 403).send();

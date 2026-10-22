@@ -32,6 +32,7 @@ export default defineConfig({
         PE_ADMIN_EMAIL: E2E_ADMIN.email,
         PE_ADMIN_PASSWORD: E2E_ADMIN.password,
         PE_DISPATCH_INTERVAL_MS: '300',
+        PE_WEBHOOKS_ALLOW_PRIVATE: 'true',
       },
     },
     {

@@ -15,8 +15,10 @@ import { SegmentEditorPage, SegmentsPage } from './pages/segments/SegmentsPage.t
 import { CampaignPage, CampaignsPage } from './pages/campaigns/CampaignsPage.tsx';
 import { JourneysPage } from './pages/journeys/JourneysPage.tsx';
 import { JourneyEditorPage } from './pages/journeys/JourneyEditorPage.tsx';
+import { ReportsPage } from './pages/reports/ReportsPage.tsx';
+import { SettingsPage } from './pages/settings/SettingsPage.tsx';
 
-const BUILT = new Set(['dashboard', 'contacts', 'templates', 'messages', 'segments', 'campaigns', 'journeys']);
+const BUILT = new Set(['dashboard', 'contacts', 'templates', 'messages', 'segments', 'campaigns', 'journeys', 'reports', 'settings']);
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <Login /> },
@@ -36,6 +38,8 @@ export const routes: RouteObject[] = [
       { path: 'journeys', element: <JourneysPage /> },
       { path: 'journeys/:id', element: <JourneyEditorPage /> },
       { path: 'messages', element: <MessagesPage /> },
+      { path: 'reports', element: <ReportsPage /> },
+      { path: 'settings', element: <SettingsPage /> },
       { path: 'messages/:id', element: <MessageDetailPage /> },
       ...NAV.filter((k) => !BUILT.has(k)).map((k) => ({ path: k, element: <ComingSoon section={k} /> })),
     ],

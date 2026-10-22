@@ -245,6 +245,32 @@ export interface JourneyStepLogTable {
   at: Timestamp;
 }
 
+export interface WebhooksTable {
+  id: Generated<string>;
+  name: string;
+  url: string;
+  events: Json<string[]>;
+  secret_encrypted: string;
+  enabled: Generated<boolean>;
+  created_by: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+export interface WebhookDeliveriesTable {
+  id: Generated<string>;
+  webhook_id: string;
+  event_name: string;
+  payload: Json<Record<string, unknown>>;
+  status: 'pending' | 'success' | 'failed';
+  attempts: Generated<number>;
+  next_attempt_at: NullableTimestamp;
+  response_code: number | null;
+  error: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
 export interface Database {
   app_settings: AppSettingsTable;
   users: UsersTable;
@@ -264,6 +290,8 @@ export interface Database {
   journeys: JourneysTable;
   journey_enrollments: JourneyEnrollmentsTable;
   journey_step_log: JourneyStepLogTable;
+  webhooks: WebhooksTable;
+  webhook_deliveries: WebhookDeliveriesTable;
 }
 
 export type Template = Selectable<TemplatesTable>;
@@ -272,6 +300,8 @@ export type Segment = Selectable<SegmentsTable>;
 export type Campaign = Selectable<CampaignsTable>;
 export type Journey = Selectable<JourneysTable>;
 export type Enrollment = Selectable<JourneyEnrollmentsTable>;
+export type Webhook = Selectable<WebhooksTable>;
+export type WebhookDelivery = Selectable<WebhookDeliveriesTable>;
 
 export type User = Selectable<UsersTable>;
 export type Contact = Selectable<ContactsTable>;

@@ -124,3 +124,22 @@ export interface JourneyRun {
   current_step: string | null; next_run_at: string | null; waiting_for: string | null; exit_reason: string | null; entry_key: string | null; entered_at: string; completed_at: string | null;
 }
 export interface SimulationStep { step: string; type: string; at: string; outcome: string; detail?: Record<string, unknown> }
+
+export interface Overview {
+  window_days: number;
+  contacts: number;
+  consent: { email_care: number; sms_care: number; email_marketing: number; sms_marketing: number };
+  messages: { sent: number; not_sent: number; failed: number };
+  email: { sent: number; open_rate: number | null; click_rate: number | null };
+  journeys: { active_runs: number; entered: number };
+  campaigns_sent: number;
+}
+export interface DayRow { day: string; channel: Channel; sent: number; delivered: number; opened: number; clicked: number; failed: number; not_sent: number }
+export interface MessagesReport { from: string; to: string; days: DayRow[]; not_sent: { reason: string; count: number }[] }
+export interface CampaignReportRow { id: string; name: string; status: CampaignStatus; completed_at: string | null; channel: Channel; targeted: number; sent: number; opened: number; clicked: number; not_sent: number }
+export interface JourneyReportRow { id: string; name: string; status: JourneyStatus; runs: number; active: number; completed: number; exited: number }
+export interface WebhookSummary { id: string; name: string; url: string; events: string[]; enabled: boolean; created_at: string; updated_at: string }
+export interface WebhookDelivery { id: string; event_name: string; status: 'pending' | 'success' | 'failed'; attempts: number; next_attempt_at: string | null; response_code: number | null; error: string | null; created_at: string }
+export interface ApiKey { id: string; name: string; prefix: string; created_at: string; last_used_at: string | null; revoked_at: string | null }
+export interface AdminUser extends User { active: boolean; created_at: string; last_login_at: string | null }
+export interface AuditEntry { id: string; at: string; actor_type: string; actor_id: string | null; action: string; entity_type: string | null; entity_id: string | null; details: Record<string, unknown> }

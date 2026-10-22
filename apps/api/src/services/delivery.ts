@@ -18,6 +18,7 @@ import type { LinkSigner } from './tracking.ts';
 const RETRY_BACKOFF_MS = [60_000, 5 * 60_000, 30 * 60_000, 2 * 3_600_000];
 export const MAX_ATTEMPTS = RETRY_BACKOFF_MS.length + 1;
 const STUCK_AFTER_MS = 10 * 60_000;
+const STOP_WORDS = new Set(['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit', 'optout', 'إلغاء', 'الغاء', 'توقف', 'ايقاف', 'إيقاف']);
 type NewMessage = Omit<Insertable<MessagesTable>, 'created_at' | 'updated_at'> & { id: string };
 const COUNTS_TOWARD_CAP: MessageStatus[] = ['queued', 'deferred', 'sending', 'sent', 'delivered'];
 
@@ -240,6 +241,23 @@ export function createDeliveryService({ db, config, contacts, templates, signer,
         await event(msg.id, 'failed', reason);
       }
       return true;
+    },
+
+    /**
+     * Twilio inbound SMS. STOP-style keywords (English and Arabic) withdraw SMS marketing consent for every
+     * contact with that number. Returns false when the signature doesn't verify.
+     */
+    async twilioInbound(params: Record<string, string>, signature: string): Promise<{ ok: boolean; optedOut: number }> {
+      const url = `${config.PE_PUBLIC_URL.replace(/\/+$/, '')}/hooks/twilio/inbound`;
+      if (!config.TWILIO_AUTH_TOKEN || !verifyTwilioSignature(config.TWILIO_AUTH_TOKEN, url, params, signature)) return { ok: false, optedOut: 0 };
+      const body = (params.Body ?? '').trim().toLowerCase();
+      if (!STOP_WORDS.has(body)) return { ok: true, optedOut: 0 };
+      const from = params.From ?? '';
+      const matches = await db.selectFrom('contacts').select('id').where('phone', '=', from).execute();
+      for (const c of matches) {
+        await db.transaction().execute((tx) => contacts.upsertIn(tx, { contact_id: c.id, consent: { sms: { marketing: 'denied' } } }, { source: 'sms_stop', actor: { type: 'system', id: 'twilio' } }));
+      }
+      return { ok: true, optedOut: matches.length };
     },
 
     async list({ contactId, campaignId, status, channel, limit = 50, cursor }: { contactId?: string | undefined; campaignId?: string | undefined; status?: MessageStatus | undefined; channel?: Message['channel'] | undefined; limit?: number; cursor?: string | undefined }) {

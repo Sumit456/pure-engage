@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 const bool = z.enum(['true', 'false']).transform((v) => v === 'true');
@@ -51,13 +52,27 @@ const schema = z.object({
   TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
   PE_TWILIO_API_BASE: z.string().url().default('https://api.twilio.com'),
 
+  /** Encrypts stored secrets (webhook signing secrets). 32 bytes, base64. Required in production. */
+  PE_SECRET_KEY: z.string().optional(),
+  /** Lets outbound webhooks target private/loopback addresses (local development and tests only). */
+  PE_WEBHOOKS_ALLOW_PRIVATE: bool.default('false'),
+
+  // Retention (days). Message bodies are personal data; delivery metadata is kept.
+  PE_MESSAGE_BODY_RETENTION_DAYS: z.coerce.number().int().min(1).default(90),
+  PE_WEBHOOK_LOG_RETENTION_DAYS: z.coerce.number().int().min(1).default(30),
+  PE_SESSION_LOG_RETENTION_DAYS: z.coerce.number().int().min(1).default(30),
+
+  /** Serve the built console (apps/console/dist) from the API, for single-container deployments. */
+  PE_CONSOLE_DIR: z.string().optional(),
+
   // PureNet webhook is mounted only when its signing secret is configured (A-011).
   PURENET_WEBHOOK_SECRET: z.string().min(16).optional(),
 });
 
-export type Config = z.infer<typeof schema> & { trackingSecret: string };
+export type Config = z.infer<typeof schema> & { trackingSecret: string; secretKey: Buffer };
 
 const DEV_TRACKING_SECRET = 'dev-only-tracking-secret-do-not-use-in-production';
+const DEV_SECRET_KEY_SEED = 'dev-only-secret-key-do-not-use-in-production';
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = schema.safeParse(Object.fromEntries(Object.entries(env).filter(([, v]) => v !== '')));
@@ -66,5 +81,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   }
   const c = parsed.data;
   if (c.NODE_ENV === 'production' && !c.PE_TRACKING_SECRET) throw new Error('Invalid configuration: PE_TRACKING_SECRET is required in production');
-  return { ...c, trackingSecret: c.PE_TRACKING_SECRET ?? DEV_TRACKING_SECRET };
+  if (c.NODE_ENV === 'production' && !c.PE_SECRET_KEY) throw new Error('Invalid configuration: PE_SECRET_KEY is required in production');
+  if (c.NODE_ENV === 'production' && c.PE_WEBHOOKS_ALLOW_PRIVATE) throw new Error('Invalid configuration: PE_WEBHOOKS_ALLOW_PRIVATE cannot be used in production');
+  const secretKey = c.PE_SECRET_KEY ? Buffer.from(c.PE_SECRET_KEY, 'base64') : createHash('sha256').update(DEV_SECRET_KEY_SEED).digest();
+  if (secretKey.length !== 32) throw new Error('Invalid configuration: PE_SECRET_KEY must be 32 bytes, base64-encoded (openssl rand -base64 32)');
+  return { ...c, trackingSecret: c.PE_TRACKING_SECRET ?? DEV_TRACKING_SECRET, secretKey };
 }

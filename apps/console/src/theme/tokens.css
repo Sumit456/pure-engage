@@ -36,6 +36,11 @@
   --pe-space: 8px;
   --pe-shadow: 0 1px 2px rgb(16 37 44 / 6%), 0 4px 16px rgb(16 37 44 / 6%);
   --pe-sidebar-width: 240px;
+
+  /* Charts (validated with the dataviz palette checker against --pe-surface in both modes) */
+  --pe-series-1: #2a78d6; /* email */
+  --pe-series-2: #eb6834; /* SMS */
+  --pe-grid: #e6ecef;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,6 +52,9 @@
     --pe-text: #e6eef1;
     --pe-text-muted: #9fb1b9;
     --pe-brand-100: #12353a;
+    --pe-series-1: #3987e5;
+    --pe-series-2: #d95926;
+    --pe-grid: #24343b;
   }
 }
 
@@ -58,4 +66,7 @@
   --pe-text: #e6eef1;
   --pe-text-muted: #9fb1b9;
   --pe-brand-100: #12353a;
+  --pe-series-1: #3987e5;
+  --pe-series-2: #d95926;
+  --pe-grid: #24343b;
 }

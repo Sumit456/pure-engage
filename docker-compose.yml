@@ -1,0 +1,25 @@
+# Local full stack: Postgres + Pure Engage (API serving the console) on http://localhost:4200.
+# Copy .env.example to .env first and set at least PE_ADMIN_EMAIL, PE_ADMIN_PASSWORD, PE_TRACKING_SECRET, PE_SECRET_KEY.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: pure_engage
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-locally}
+      POSTGRES_DB: pure_engage
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pure_engage"]
+      interval: 5s
+      retries: 10
+  app:
+    build: .
+    env_file: .env
+    environment:
+      PE_DATABASE_URL: postgres://pure_engage:${POSTGRES_PASSWORD:-change-me-locally}@db:5432/pure_engage
+      PE_PUBLIC_URL: ${PE_PUBLIC_URL:-http://localhost:4200}
+    ports: ["4200:4200"]
+    depends_on:
+      db: { condition: service_healthy }
+volumes:
+  pgdata:
