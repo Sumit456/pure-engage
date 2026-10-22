@@ -28,9 +28,22 @@ Requires Node ≥ 22.18 and PostgreSQL 16 (or set `PE_DATABASE_URL` / `PE_TEST_D
 ```bash
 npm ci
 npm run db             # local Postgres on :5433 with pure_engage and pure_engage_test databases
+PE_NEW_USER_PASSWORD='choose-a-long-one' npm run create-user -- you@example.com admin "Your Name"
 npm run dev:api        # API on http://127.0.0.1:4200 (applies migrations on start)
 npm run dev:console    # console on http://127.0.0.1:5173
 ```
+
+## API at a glance
+| Area | Endpoints | Access |
+|---|---|---|
+| Auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/password` | Session cookie (httpOnly) + `x-pe-csrf: 1` on writes; 30 min idle / 12 h max |
+| Contacts | `GET/POST /api/contacts`, `GET/PATCH/DELETE /api/contacts/:id`, `GET /api/contacts/:id/events` | viewer reads, marketer writes, admin deletes; every contact view is audited |
+| Admin | `/api/users`, `/api/api-keys`, `GET /api/audit` | admin |
+| Public ingest | `POST /api/v1/track` ([contract](docs/contracts/platform-ingest.openapi.yaml)) | `Authorization: Bearer pe_…` API key |
+| PureNet | `POST /hooks/purenet` (only when `PURENET_WEBHOOK_SECRET` is set) | HMAC signature (A-011) |
+
+Consent is stored per channel (`email`, `sms`, `push`) and purpose (`care`, `marketing`), with a history row per
+change. Anything not explicitly `granted` counts as denied.
 
 Checks (all run in CI):
 ```bash

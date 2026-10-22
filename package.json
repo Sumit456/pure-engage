@@ -24,7 +24,8 @@
     "mock:purenet-oauth": "prism mock -h 127.0.0.1 -p 4011 docs/contracts/purenet-oauth.openapi.yaml",
     "mocks": "npm run mock:purenet & npm run mock:purenet-oauth & wait",
     "smoke:purenet": "bash mock/purenet/smoke.sh",
-    "scan:secrets": "if command -v gitleaks >/dev/null; then gitleaks git . --config .gitleaks.toml --redact; else docker run --rm -v \"$PWD:/repo\" zricethezav/gitleaks:v8.21.2 git /repo --config /repo/.gitleaks.toml --redact; fi"
+    "scan:secrets": "if command -v gitleaks >/dev/null; then gitleaks git . --config .gitleaks.toml --redact; else docker run --rm -v \"$PWD:/repo\" zricethezav/gitleaks:v8.21.2 git /repo --config /repo/.gitleaks.toml --redact; fi",
+    "create-user": "npm run create-user -w @pure-engage/api --"
   },
   "devDependencies": {
     "@asyncapi/cli": "6.2.0",

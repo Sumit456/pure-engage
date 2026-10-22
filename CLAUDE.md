@@ -38,12 +38,20 @@ source of truth, and the PureNet mock is generated from it.
   Use logical CSS properties (`inline-start`/`inline-end`) so Arabic RTL works. Every UI string goes in both
   `en.json` and `ar.json` (a test enforces matching keys).
 
+## Domain rules
+- Consent is per channel × purpose. Only an explicit `granted` permits sending (`canSend` in `packages/shared`).
+  Every consent change writes a `consent_history` row with its source.
+- Opening a contact (`GET /api/contacts/:id`) is PHI access and is audited. Audit `details` record which fields
+  changed, never their values.
+- Contacts resolve by `contact_id` → `external_id` → `email`. Email-only matching refuses ambiguous matches.
+
 ## Commands
 - `npm run db`: start the local Postgres (`.pgdata`, port 5433) and create the dev and test databases
 - `npm run dev:api` / `npm run dev:console`: API on :4200, console on :5173 (proxies `/api`)
 - `npm test`: all workspaces (connector node:test, API Vitest against Postgres, console Vitest)
 - `npm run typecheck`, `npm run build`
 - `npm run migrate`: apply API migrations to `PE_DATABASE_URL`
+- `PE_NEW_USER_PASSWORD=… npm run create-user -- <email> [admin|marketer|viewer] [name]`: create a console user
 - `npm run e2e`: PureNet end-to-end run against both Prism mocks
 - `npm run lint:contracts`: lint the OpenAPI and AsyncAPI specs
 - `npm run check:evidence`: check that every contract element is labelled
