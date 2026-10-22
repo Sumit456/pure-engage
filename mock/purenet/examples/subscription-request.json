@@ -1,0 +1,4 @@
+{
+  "callbackUrl": "https://platform.example.com/hooks/purenet",
+  "eventTypes": ["appointment.booked", "appointment.cancelled", "appointment.reminder_due"]
+}

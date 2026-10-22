@@ -1,0 +1,149 @@
+asyncapi: 3.1.0
+info:
+  title: PureNet events (consumer-driven draft)
+  version: 0.1.0-draft
+  description: |
+    **This is not PureNet's real event format.** These are the events this platform would like PureNet to push
+    to the callback registered via `POST /subscriptions` (A-008). Every element is INFERRED (see
+    docs/contracts/ASSUMPTIONS.md). The envelope and signature follow the pattern Orbit uses for its own
+    webhooks (orbit@dbc6cc9 src/services/webhooks.js). That's a proposal, not knowledge of PureNet. All
+    examples are synthetic.
+  x-evidence: { status: INFERRED, assumption: A-008 }
+defaultContentType: application/json
+servers:
+  platformCallback:
+    host: platform.example.com
+    pathname: /hooks/purenet
+    protocol: https
+    description: Our HTTPS callback. PureNet POSTs one event per request.
+    x-evidence: { status: INFERRED, assumption: A-008 }
+channels:
+  purenetCallback:
+    address: /hooks/purenet
+    description: Single callback; the event type is in the envelope and in the X-PureNet-Event header.
+    x-evidence: { status: INFERRED, assumption: A-008 }
+    messages:
+      memberUpdated: { $ref: '#/components/messages/memberUpdated' }
+      consentChanged: { $ref: '#/components/messages/consentChanged' }
+      appointmentBooked: { $ref: '#/components/messages/appointmentBooked' }
+      appointmentCancelled: { $ref: '#/components/messages/appointmentCancelled' }
+      appointmentReminderDue: { $ref: '#/components/messages/appointmentReminderDue' }
+operations:
+  receivePurenetEvent:
+    action: receive
+    channel: { $ref: '#/channels/purenetCallback' }
+    summary: Receive a PureNet event. Verify the signature, de-duplicate on envelope id, then reply 2xx.
+    x-evidence: { status: INFERRED, assumption: A-010 }
+    messages:
+      - $ref: '#/channels/purenetCallback/messages/memberUpdated'
+      - $ref: '#/channels/purenetCallback/messages/consentChanged'
+      - $ref: '#/channels/purenetCallback/messages/appointmentBooked'
+      - $ref: '#/channels/purenetCallback/messages/appointmentCancelled'
+      - $ref: '#/channels/purenetCallback/messages/appointmentReminderDue'
+components:
+  messageTraits:
+    signedDelivery:
+      headers: { $ref: '#/components/schemas/DeliveryHeaders' }
+  messages:
+    memberUpdated:
+      name: member.updated
+      title: Member updated
+      x-evidence: { status: INFERRED, assumption: A-009 }
+      traits: [{ $ref: '#/components/messageTraits/signedDelivery' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/EventEnvelope'
+          - type: object
+            properties:
+              type: { const: member.updated }
+              data:
+                type: object
+                required: [memberId, changedFields]
+                properties:
+                  memberId: { type: string }
+                  changedFields: { type: array, items: { type: string } }
+      examples:
+        - name: languageChanged
+          headers: { X-PureNet-Event: member.updated, X-PureNet-Delivery: dlv_test_0001, X-PureNet-Signature: 't=1767254400,v1=0000000000000000000000000000000000000000000000000000000000000000' }
+          payload: { id: evt_test_0001, type: member.updated, occurred_at: '2026-01-01T08:00:00Z', data: { memberId: MBR-TEST-0001, changedFields: [preferredLanguage] } }
+    consentChanged:
+      name: consent.changed
+      title: Consent changed
+      x-evidence: { status: INFERRED, assumption: A-007 }
+      traits: [{ $ref: '#/components/messageTraits/signedDelivery' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/EventEnvelope'
+          - type: object
+            properties:
+              type: { const: consent.changed }
+              data:
+                type: object
+                required: [memberId, channel, purpose, status]
+                properties:
+                  memberId: { type: string }
+                  channel: { type: string, enum: [email, sms, push] }
+                  purpose: { type: string, enum: [care, marketing] }
+                  status: { type: string, enum: [granted, denied, unknown] }
+      examples:
+        - name: smsMarketingDenied
+          payload: { id: evt_test_0002, type: consent.changed, occurred_at: '2026-01-01T08:05:00Z', data: { memberId: MBR-TEST-0001, channel: sms, purpose: marketing, status: denied } }
+    appointmentBooked:
+      name: appointment.booked
+      title: Appointment booked
+      x-evidence: { status: INFERRED, assumption: A-009 }
+      traits: [{ $ref: '#/components/messageTraits/signedDelivery' }]
+      payload: { $ref: '#/components/schemas/AppointmentEvent' }
+      examples:
+        - name: booked
+          payload: { id: evt_test_0003, type: appointment.booked, occurred_at: '2026-01-02T09:00:00Z', data: { id: APT-TEST-0001, memberId: MBR-TEST-0001, facilityId: FAC-TEST-01, serviceType: general-consultation, start: '2026-01-10T06:30:00Z', status: booked } }
+    appointmentCancelled:
+      name: appointment.cancelled
+      title: Appointment cancelled
+      x-evidence: { status: INFERRED, assumption: A-009 }
+      traits: [{ $ref: '#/components/messageTraits/signedDelivery' }]
+      payload: { $ref: '#/components/schemas/AppointmentEvent' }
+    appointmentReminderDue:
+      name: appointment.reminder_due
+      title: Appointment reminder due
+      x-evidence: { status: INFERRED, assumption: A-009 }
+      traits: [{ $ref: '#/components/messageTraits/signedDelivery' }]
+      payload: { $ref: '#/components/schemas/AppointmentEvent' }
+  schemas:
+    DeliveryHeaders:
+      type: object
+      x-evidence: { status: INFERRED, assumption: A-011 }
+      required: [X-PureNet-Event, X-PureNet-Delivery, X-PureNet-Signature]
+      properties:
+        X-PureNet-Event: { type: string, description: Event type. }
+        X-PureNet-Delivery: { type: string, description: Unique per delivery attempt group. }
+        X-PureNet-Signature:
+          type: string
+          description: '`t=<unix seconds>,v1=<hex HMAC-SHA256(signingSecret, "{t}.{raw body}")>`. Reject if t is more than 5 minutes old.'
+          pattern: '^t=\d+,v1=[0-9a-f]{64}$'
+    EventEnvelope:
+      type: object
+      x-evidence: { status: INFERRED, assumption: A-010 }
+      required: [id, type, occurred_at, data]
+      properties:
+        id: { type: string, description: Unique event id. At-least-once delivery means the receiver de-duplicates on this. }
+        type: { type: string }
+        occurred_at: { type: string, format: date-time }
+        data: { type: object }
+    AppointmentEvent:
+      x-evidence: { status: INFERRED, assumption: A-014 }
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            type: { type: string, enum: [appointment.booked, appointment.cancelled, appointment.reminder_due] }
+            data:
+              type: object
+              required: [id, memberId, start, status]
+              properties:
+                id: { type: string }
+                memberId: { type: string }
+                facilityId: { type: string }
+                serviceType: { type: string }
+                start: { type: string, format: date-time }
+                status: { type: string, enum: [booked, cancelled, completed, no_show] }

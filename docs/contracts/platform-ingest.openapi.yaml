@@ -1,0 +1,228 @@
+openapi: 3.1.0
+info:
+  title: purenet-platform ingest API
+  version: 0.1.0
+  summary: The platform's own public API for profiles, events, journey triggers and transactional sends.
+  description: |
+    Adopted from Orbit's public API as it stands at orbit@dbc6cc9. `CONFIRMED` here means the shape is confirmed
+    as Orbit's tested behaviour (the source is cited on each element). Adopting it for this platform is a design
+    decision recorded in ADR-0001. Examples are synthetic.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+  x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:206-254' }
+servers:
+  - url: https://platform.example.com/api/v1
+    description: Placeholder host
+security:
+  - apiKey: []
+tags:
+  - name: Ingest
+    description: Profiles and events.
+  - name: Messaging
+    description: Journey triggers and transactional sends.
+paths:
+  /track:
+    post:
+      tags: [Ingest]
+      operationId: track
+      summary: Batch upsert profile attributes and record events
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:216-231; test/api.test.js:30-38' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrackRequest' }
+            example:
+              attributes: [{ external_id: MBR-TEST-0001, email: test.member@example.com, preferred_language: ar }]
+              events: [{ external_id: MBR-TEST-0001, name: appointment.booked, properties: { appointment_id: APT-TEST-0001 }, idempotency_key: evt_test_0003 }]
+      responses:
+        '201':
+          description: All objects processed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrackResult' }
+              example: { attributes_processed: 1, events_processed: 1, duplicates: 0, errors: [] }
+        '207':
+          description: Some objects failed; see `errors`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrackResult' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+  /journeys/{journeyId}/trigger:
+    post:
+      tags: [Messaging]
+      operationId: triggerJourney
+      summary: Enter a contact into an API-triggered journey
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:252; src/services/journeys.js:297 (code only, no dedicated route test)' }
+      parameters:
+        - name: journeyId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Recipient' }
+      responses:
+        '200':
+          description: Trigger result.
+          content:
+            application/json:
+              schema: { type: object }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /messages/send:
+    post:
+      tags: [Messaging]
+      operationId: sendMessages
+      summary: Transactional send of a template to up to 100 recipients
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:234-250; test/messaging.test.js:99' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SendRequest' }
+      responses:
+        '201':
+          description: All recipients enqueued.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SendResult' }
+        '207':
+          description: Some recipients failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SendResult' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+  /messages/{messageId}/open:
+    post:
+      tags: [Messaging]
+      operationId: recordOpen
+      summary: Mobile push-open callback
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:253' }
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Whether an open was recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties: { ok: { type: boolean } }
+        '401': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: Static API key sent as a bearer token.
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:209-214; test/api.test.js:31' }
+  responses:
+    Error:
+      description: Error.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/lib/util.js:14 (HttpError); src/app.js:52' }
+      required: [error]
+      properties:
+        error: { type: string }
+        details: {}
+    ContactRef:
+      type: object
+      description: At least one of external_id, email or contact_id identifies the contact.
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/services/events.js:22' }
+      properties:
+        external_id: { type: string }
+        email: { type: string, format: email }
+        contact_id: { type: string }
+    Attributes:
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:221-223' }
+      allOf:
+        - $ref: '#/components/schemas/ContactRef'
+        - type: object
+          additionalProperties: true
+    Event:
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/services/events.js:22-35; test/api.test.js:34' }
+      allOf:
+        - $ref: '#/components/schemas/ContactRef'
+        - type: object
+          required: [name]
+          properties:
+            name: { type: string }
+            properties: { type: object, additionalProperties: true }
+            time: { type: string, format: date-time }
+            idempotency_key: { type: string, description: A repeat is counted in `duplicates` and not stored again. }
+    TrackRequest:
+      type: object
+      description: At most 500 attributes and events combined (otherwise 413).
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:217-219' }
+      properties:
+        attributes: { type: array, items: { $ref: '#/components/schemas/Attributes' } }
+        events: { type: array, items: { $ref: '#/components/schemas/Event' } }
+    TrackResult:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 test/api.test.js:38' }
+      required: [attributes_processed, events_processed, duplicates, errors]
+      properties:
+        attributes_processed: { type: integer }
+        events_processed: { type: integer }
+        duplicates: { type: integer }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, enum: [attribute, event] }
+              index: { type: integer }
+              error: { type: string }
+    Recipient:
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:242' }
+      allOf:
+        - $ref: '#/components/schemas/ContactRef'
+        - type: object
+          properties:
+            phone: { type: string }
+            properties: { type: object, additionalProperties: true }
+            attributes: { type: object, additionalProperties: true }
+    SendRequest:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:235-238' }
+      required: [template_id, recipients]
+      properties:
+        template_id: { type: string }
+        recipients:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: '#/components/schemas/Recipient' }
+        transactional: { type: boolean, default: true }
+    SendResult:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:244-249' }
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              contact_id: { type: string }
+              message_id: { type: string }
+              status: { type: string }
+              reason: { type: [string, 'null'] }
+              error: { type: string }

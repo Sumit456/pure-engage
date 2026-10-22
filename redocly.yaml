@@ -1,0 +1,5 @@
+extends:
+  - recommended
+rules:
+  # Placeholder hosts are deliberate until A-003 is answered.
+  no-server-example.com: off

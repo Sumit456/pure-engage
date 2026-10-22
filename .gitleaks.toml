@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+# Synthetic placeholders used in contract examples.
+[allowlist]
+description = "Synthetic test values"
+regexes = ['''whsec_TEST_NOT_A_REAL_SECRET''', '''v1=0{64}''']
