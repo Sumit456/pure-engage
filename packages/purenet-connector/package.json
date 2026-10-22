@@ -1,0 +1,14 @@
+{
+  "name": "@pure-engage/purenet-connector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Provisional PureNet connector for Pure Engage, built on INFERRED contracts (see docs/contracts/ASSUMPTIONS.md).",
+  "exports": { ".": "./src/index.js" },
+  "scripts": {
+    "test": "node --test 'test/**/*.test.js'",
+    "dev": "node dev-server.js",
+    "sync:member": "node scripts/sync-member.mjs",
+    "emit:events": "node scripts/emit-events.mjs"
+  }
+}

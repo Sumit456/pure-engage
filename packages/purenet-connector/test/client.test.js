@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createTokenProvider, createPureNetClient, PureNetError } from '../../src/integrations/purenet/index.js';
-import { retryDelayMs } from '../../src/integrations/purenet/client.js';
+import { createTokenProvider, createPureNetClient, PureNetError } from '../src/index.js';
+import { retryDelayMs } from '../src/client.js';
 import { fakeServer, json, tokenHandler } from './helpers.js';
 
 async function setup() {

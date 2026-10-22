@@ -3,7 +3,7 @@
 // Usage: PURENET_WEBHOOK_SECRET=... node scripts/emit-events.mjs [url] [--twice]
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
-import { sign } from '../src/integrations/purenet/signature.js';
+import { sign } from '../src/signature.js';
 
 const args = process.argv.slice(2);
 const url = args.find((a) => !a.startsWith('--')) || 'http://127.0.0.1:4100/hooks/purenet';
@@ -11,7 +11,7 @@ const twice = args.includes('--twice'); // resend everything to exercise de-dupl
 const secret = process.env.PURENET_WEBHOOK_SECRET;
 if (!secret) { console.error('PURENET_WEBHOOK_SECRET is required'); process.exit(2); }
 
-const spec = parse(readFileSync(new URL('../docs/contracts/purenet-events.asyncapi.yaml', import.meta.url), 'utf8'));
+const spec = parse(readFileSync(new URL('../../../docs/contracts/purenet-events.asyncapi.yaml', import.meta.url), 'utf8'));
 const payloads = Object.values(spec.components.messages).flatMap((m) => (m.examples ?? []).map((e) => e.payload));
 
 let failed = 0;

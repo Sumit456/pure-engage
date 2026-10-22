@@ -3,8 +3,10 @@
 Rules for anyone (human or agent) working in this repository.
 
 ## What this repo is
-The production codebase for the PureHealth engagement platform that integrates with PureNet.
-It is contract-first: `docs/contracts/` is the source of truth, and the PureNet mock is generated from it.
+**Pure Engage**: PureHealth's member engagement and marketing automation platform (alongside the Pura app).
+An npm-workspaces monorepo (ADR-0003): `apps/api` (Fastify + PostgreSQL), `apps/console` (React + Vite),
+`packages/shared`, `packages/purenet-connector`. Integrations are contract-first: `docs/contracts/` is the
+source of truth, and the PureNet mock is generated from it.
 
 ## Hard rules
 1. **No real data, ever.** No patient data, PHI, real names, national IDs, phone numbers or emails.
@@ -16,7 +18,7 @@ It is contract-first: `docs/contracts/` is the source of truth, and the PureNet 
    - `status: INFERRED` means it's an assumption, with `assumption: A-NNN` pointing at `docs/contracts/ASSUMPTIONS.md`.
 4. **Don't build production logic on INFERRED items** beyond the mock and adapter interfaces. First get the item
    CONFIRMED by the PureNet team, then update `ASSUMPTIONS.md` and the contract.
-4a. PureNet code lives only in `src/integrations/purenet/` and tags each assumption it relies on with its
+4a. PureNet code lives only in `packages/purenet-connector/` and tags each assumption it relies on with its
    `A-NNN` ID. Nothing outside that folder uses PureNet field names: the connector hands the rest of the
    platform its own `/track` shape (`platform-ingest.openapi.yaml`).
 5. **Orbit (`github.com/Sumit456/Orbit`) is read-only prior art.** Reference it by pinned commit (`dbc6cc9`).
@@ -27,9 +29,22 @@ It is contract-first: `docs/contracts/` is the source of truth, and the PureNet 
    analysis material: don't commit it here. Use it to *propose* a change to `ASSUMPTIONS.md`, and treat the item
    as INFERRED until the PureNet team confirms it.
 
+## Code conventions
+- API TypeScript runs directly on Node 22 type stripping: erasable syntax only (no `enum`, `namespace` or
+  constructor parameter properties), `import type` for types, and `.ts` extensions on relative imports.
+- Every schema change is a new file in `apps/api/src/db/migrations/` with `up` and `down`, plus matching types in
+  `apps/api/src/db/schema.ts`. Never edit a migration that has been pushed.
+- Console styling reads CSS variables from `apps/console/src/theme/tokens.css` only (no hard-coded colours).
+  Use logical CSS properties (`inline-start`/`inline-end`) so Arabic RTL works. Every UI string goes in both
+  `en.json` and `ar.json` (a test enforces matching keys).
+
 ## Commands
-- `npm test`: connector unit tests (`node:test`)
-- `npm run e2e`: end-to-end run against both Prism mocks
+- `npm run db`: start the local Postgres (`.pgdata`, port 5433) and create the dev and test databases
+- `npm run dev:api` / `npm run dev:console`: API on :4200, console on :5173 (proxies `/api`)
+- `npm test`: all workspaces (connector node:test, API Vitest against Postgres, console Vitest)
+- `npm run typecheck`, `npm run build`
+- `npm run migrate`: apply API migrations to `PE_DATABASE_URL`
+- `npm run e2e`: PureNet end-to-end run against both Prism mocks
 - `npm run lint:contracts`: lint the OpenAPI and AsyncAPI specs
 - `npm run check:evidence`: check that every contract element is labelled
 - `npm run mocks`: run the PureNet API mock (:4010) and OAuth mock (:4011)

@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: PureNet API (consumer-driven draft)
   version: 0.1.0-draft
-  summary: What purenet-platform needs from PureNet. Every element is INFERRED.
+  summary: What Pure Engage needs from PureNet. Every element is INFERRED.
   description: |
     **This is not PureNet's real API.** It's a draft of the API this platform needs, for the PureNet team
     to correct. No PureNet documentation, traffic or code was available (see docs/audit/orbit-audit.md).

@@ -2,7 +2,7 @@
 
 **Built on INFERRED contracts.** Every PureNet behaviour this code relies on is an assumption from
 `docs/contracts/ASSUMPTIONS.md`, and each one is tagged in the code with its `A-NNN` ID. When the PureNet team
-answers a question, `grep -rn "A-0NN" src/` finds the code to revisit.
+answers a question, `grep -rn "A-0NN" packages/purenet-connector/` finds the code to revisit.
 
 | Module | Does | Assumptions |
 |---|---|---|

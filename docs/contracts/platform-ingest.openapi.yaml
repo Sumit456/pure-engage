@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: purenet-platform ingest API
+  title: Pure Engage ingest API
   version: 0.1.0
   summary: The platform's own public API for profiles, events, journey triggers and transactional sends.
   description: |

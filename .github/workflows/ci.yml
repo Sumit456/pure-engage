@@ -5,6 +5,32 @@ on:
 permissions:
   contents: read
 jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pure_engage
+          POSTGRES_DB: pure_engage
+          POSTGRES_HOST_AUTH_METHOD: trust # CI-only throwaway database, not reachable from outside the job
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U pure_engage" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PE_DATABASE_URL: postgres://pure_engage@localhost:5432/pure_engage
+      PE_TEST_DATABASE_URL: postgres://pure_engage@localhost:5432/pure_engage_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run migrate
   contracts:
     runs-on: ubuntu-latest
     steps:
@@ -16,7 +42,6 @@ jobs:
       - run: npm ci
       - run: npm run lint:contracts
       - run: npm run check:evidence
-      - run: npm test
       - name: End-to-end against the PureNet mocks
         run: npm run e2e
       - name: Smoke-test the PureNet mock

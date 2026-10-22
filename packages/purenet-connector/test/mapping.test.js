@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { memberToAttributes, canSend, eventToTrack } from '../../src/integrations/purenet/index.js';
+import { memberToAttributes, canSend, eventToTrack } from '../src/index.js';
 
 const member = {
   memberId: 'MBR-1',

@@ -1,0 +1,16 @@
+{
+  "app": { "name": "Pure Engage", "tagline": "Member engagement for PureHealth" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "contacts": "Contacts",
+    "segments": "Segments",
+    "templates": "Templates",
+    "campaigns": "Campaigns",
+    "journeys": "Journeys",
+    "messages": "Messages",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "common": { "language": "Language", "comingSoon": "This area is being built in an upcoming milestone." },
+  "dashboard": { "title": "Dashboard", "welcome": "Welcome to Pure Engage. Contacts, journeys and messaging arrive in the next milestones." }
+}

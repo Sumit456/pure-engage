@@ -1,47 +1,46 @@
-# purenet-platform
+# Pure Engage
 
-The PureHealth engagement platform, which integrates with PureNet. It's contract-first: the API and event
-contracts in `docs/contracts/` come first, and a PureNet mock is generated from them so platform work can start
-before sandbox access.
+PureHealth's member engagement and marketing automation platform, alongside the Pura app. It manages
+contacts and consent, segments, templates, campaigns, multi-step journeys (for example appointment reminders)
+and email/SMS delivery, and integrates with PureNet.
 
-> **Status: every PureNet contract is INFERRED.** It's a draft of what we need, not PureNet's documented API.
-> The open questions for the PureNet team are in [`docs/contracts/ASSUMPTIONS.md`](docs/contracts/ASSUMPTIONS.md).
+> **Status: under construction, built in milestones** (see [ADR-0003](docs/adr/0003-stack-and-layout.md)).
+> The PureNet integration is built on **INFERRED** contracts until the PureNet team answers
+> [`docs/contracts/ASSUMPTIONS.md`](docs/contracts/ASSUMPTIONS.md).
 
 ## Layout
 | Path | What |
 |---|---|
-| `docs/audit/orbit-audit.md` | Audit of `Sumit456/Orbit` (prior art): classification, findings, secrets result |
-| `docs/adr/` | ADR-0001 (new repo, Orbit referenced by pinned commit), ADR-0002 (Prism mock) |
-| `docs/contracts/purenet.openapi.yaml` | PureNet API draft: members, consents, subscriptions (INFERRED) |
-| `docs/contracts/purenet-events.asyncapi.yaml` | PureNet → platform events draft (INFERRED) |
-| `docs/contracts/platform-ingest.openapi.yaml` | Our ingest API, adopted from Orbit (CONFIRMED as Orbit behaviour) |
-| `docs/contracts/platform-webhooks.asyncapi.yaml` | Our outbound webhooks, adopted from Orbit (CONFIRMED as Orbit behaviour) |
-| `docs/contracts/ASSUMPTIONS.md` | Register of assumptions to validate |
-| `mock/purenet/` | Prism mock: docker-compose, smoke test, examples |
-| `docs/contracts/purenet-oauth.openapi.yaml` | PureNet token endpoint draft (INFERRED), so the mock can issue tokens |
-| `src/integrations/purenet/` | **PureNet connector (provisional, built on INFERRED contracts)**: OAuth client, REST client with retries, webhook receiver with signature check and de-duplication, mapping to the platform's `/track` shape |
-| `src/server.js` | Dev service: `POST /hooks/purenet`, `GET /healthz`, `GET /_dev/ingested` |
-| `scripts/check-evidence.mjs` | Fails if any contract element lacks an `x-evidence` label |
-| `scripts/sync-member.mjs`, `scripts/emit-events.mjs`, `scripts/e2e.sh` | Member sync, signed sample events, end-to-end run against the mocks |
+| `apps/api` | Fastify API + PostgreSQL (Kysely, migrations). TypeScript run directly by Node 22 |
+| `apps/console` | React + Vite console. English and Arabic (RTL). Theme in `src/theme/tokens.css` |
+| `packages/shared` | zod schemas and types shared by the API and console |
+| `packages/purenet-connector` | Provisional PureNet connector: OAuth, REST client, signed webhook receiver, mapping |
+| `docs/contracts/` | OpenAPI/AsyncAPI contracts (every element labelled CONFIRMED or INFERRED) + `ASSUMPTIONS.md` |
+| `docs/adr/` | Decisions: 0001 repo location, 0002 contract-first mock, 0003 stack and layout |
+| `docs/audit/orbit-audit.md` | Audit of `Sumit456/Orbit` (prior art only; no code reused) |
+| `mock/purenet/` | Prism mock of PureNet, smoke test, examples |
+| `scripts/` | `dev-db.sh` (local Postgres), `check-evidence.mjs`, `e2e-purenet.sh` |
 | `.mcp.json` | REA reverse-engineering MCP server (analysis only; see CLAUDE.md rule 6) |
 
-## Quick start
+## Getting started
+Requires Node ≥ 22.18 and PostgreSQL 16 (or set `PE_DATABASE_URL` / `PE_TEST_DATABASE_URL` to your own server).
+
 ```bash
 npm ci
-npm run lint:contracts     # Redocly + AsyncAPI
-npm run check:evidence     # every element labelled CONFIRMED (with a source) or INFERRED (with an A-NNN)
-npm test                   # connector unit tests
-npm run e2e                # starts both mocks + the service, syncs a member, sends signed events
-npm run scan:secrets       # gitleaks
+npm run db             # local Postgres on :5433 with pure_engage and pure_engage_test databases
+npm run dev:api        # API on http://127.0.0.1:4200 (applies migrations on start)
+npm run dev:console    # console on http://127.0.0.1:5173
 ```
 
-Running it by hand:
+Checks (all run in CI):
 ```bash
-npm run mocks                                         # PureNet API :4010 + OAuth :4011
-PURENET_WEBHOOK_SECRET=whsec_dev npm start            # service on :4100
-npm run sync:member -- MBR-TEST-0001                  # member + consents → platform attributes
-PURENET_WEBHOOK_SECRET=whsec_dev npm run emit:events  # signed sample events → /hooks/purenet
-curl http://127.0.0.1:4100/_dev/ingested
+npm test               # connector + API (against Postgres) + console
+npm run typecheck
+npm run build
+npm run lint:contracts && npm run check:evidence
+npm run e2e            # PureNet flow against the Prism mocks
+npm run scan:secrets   # gitleaks
 ```
 
-Ground rules (no real data, no secrets, evidence labels, Orbit is read-only) are in [`CLAUDE.md`](CLAUDE.md).
+Configuration lives in environment variables; see [`.env.example`](.env.example). Ground rules (no real data,
+no secrets, evidence labels, code conventions) are in [`CLAUDE.md`](CLAUDE.md).

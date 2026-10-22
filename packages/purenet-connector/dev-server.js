@@ -2,7 +2,7 @@
 // There is no platform store yet. The sink keeps the last payloads in memory, and they're visible at
 // GET /_dev/ingested (disabled when NODE_ENV=production).
 import { createServer } from 'node:http';
-import { createPureNetFromEnv, createReceiver } from './integrations/purenet/index.js';
+import { createPureNetFromEnv, createReceiver } from './src/index.js';
 
 const PORT = Number(process.env.PORT || 4100);
 const HOST = process.env.HOST || '127.0.0.1';

@@ -1,6 +1,6 @@
 # ADR-0001: Build the platform in a new repo that references Orbit
 
-- **Status:** Accepted
+- **Status:** Accepted (the platform was later named Pure Engage; see ADR-0003)
 - **Date:** 2026-10-22
 
 ## Context

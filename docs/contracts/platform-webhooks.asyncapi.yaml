@@ -1,6 +1,6 @@
 asyncapi: 3.1.0
 info:
-  title: purenet-platform outbound webhooks
+  title: Pure Engage outbound webhooks
   version: 0.1.0
   description: |
     Events the platform POSTs to subscriber URLs. Adopted from Orbit at orbit@dbc6cc9. CONFIRMED means confirmed as

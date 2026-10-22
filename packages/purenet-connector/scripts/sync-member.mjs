@@ -1,6 +1,6 @@
 // Look up a PureNet member by identifier and print the platform /track payload it maps to.
 // Usage: node scripts/sync-member.mjs [value] [system]   (defaults to the mock's MBR-TEST-0001)
-import { createPureNetFromEnv, memberToAttributes, MEMBER_ID_SYSTEM } from '../src/integrations/purenet/index.js';
+import { createPureNetFromEnv, memberToAttributes, MEMBER_ID_SYSTEM } from '../src/index.js';
 
 const [value = 'MBR-TEST-0001', system = MEMBER_ID_SYSTEM] = process.argv.slice(2);
 const { client } = createPureNetFromEnv();

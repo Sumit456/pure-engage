@@ -1,0 +1,10 @@
+{
+  "name": "@pure-engage/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Schemas and types shared by the Pure Engage API and console.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p ." },
+  "dependencies": { "zod": "3.25.76" }
+}

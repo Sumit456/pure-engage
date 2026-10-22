@@ -1,0 +1,73 @@
+/* Logical properties (inline-start/end) so the layout mirrors automatically in Arabic (dir="rtl"). */
+.pe-shell {
+  display: grid;
+  grid-template-columns: var(--pe-sidebar-width) 1fr;
+  min-height: 100%;
+}
+
+.pe-sidebar {
+  background: var(--pe-surface);
+  border-inline-end: 1px solid var(--pe-border);
+  padding: calc(var(--pe-space) * 2);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pe-space) * 3);
+}
+
+.pe-brand { display: flex; align-items: center; gap: var(--pe-space); font-weight: 600; }
+.pe-brand__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--pe-radius-sm);
+  background: var(--pe-brand-600);
+  color: var(--pe-on-brand);
+  font-size: 0.8rem;
+}
+
+.pe-sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+.pe-nav__link {
+  padding: var(--pe-space) calc(var(--pe-space) * 1.5);
+  border-radius: var(--pe-radius-sm);
+  color: var(--pe-text);
+  text-decoration: none;
+}
+.pe-nav__link:hover { background: var(--pe-surface-muted); }
+.pe-nav__link.active { background: var(--pe-brand-100); color: var(--pe-brand-600); font-weight: 600; }
+
+.pe-main { display: flex; flex-direction: column; min-width: 0; }
+.pe-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(var(--pe-space) * 2);
+  padding: calc(var(--pe-space) * 1.5) calc(var(--pe-space) * 3);
+  background: var(--pe-surface);
+  border-block-end: 1px solid var(--pe-border);
+}
+.pe-lang select {
+  font: inherit;
+  padding: 4px 8px;
+  border-radius: var(--pe-radius-sm);
+  border: 1px solid var(--pe-border);
+  background: var(--pe-surface);
+  color: var(--pe-text);
+}
+.pe-content { padding: calc(var(--pe-space) * 3); }
+
+.pe-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .pe-shell { grid-template-columns: 1fr; }
+  .pe-sidebar { border-inline-end: 0; border-block-end: 1px solid var(--pe-border); }
+  .pe-sidebar nav { flex-direction: row; flex-wrap: wrap; }
+  .pe-content { padding: calc(var(--pe-space) * 2); }
+}

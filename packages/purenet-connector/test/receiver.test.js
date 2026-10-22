@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { createReceiver, sign, verify, createSeenSet } from '../../src/integrations/purenet/index.js';
+import { createReceiver, sign, verify, createSeenSet } from '../src/index.js';
 
 const SECRET = 'whsec_test';
 const booked = { id: 'evt_1', type: 'appointment.booked', occurred_at: '2026-01-02T09:00:00Z', data: { id: 'APT-1', memberId: 'MBR-1', facilityId: 'FAC-1', serviceType: 'gp', start: '2026-01-10T06:30:00Z', status: 'booked' } };
