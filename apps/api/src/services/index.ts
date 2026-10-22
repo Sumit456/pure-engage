@@ -11,6 +11,7 @@ import { createLinkSigner } from './tracking.ts';
 import { createSegmentsService } from './segments.ts';
 import { createCampaignsService } from './campaigns.ts';
 import { createWorker } from './worker.ts';
+import { createJourneysService } from './journeys.ts';
 
 export interface ServiceOptions {
   clock?: () => Date;
@@ -28,11 +29,14 @@ export function createServices(db: DB, config: Config, { clock = () => new Date(
   const delivery = createDeliveryService({ db, config, contacts, templates, signer, providers, clock, ...(log ? { log } : {}) });
   const segments = createSegmentsService(db, clock);
   const campaigns = createCampaignsService({ db, segments, templates, delivery, clock, batchSize: config.PE_CAMPAIGN_BATCH_SIZE, ...(log ? { log } : {}) });
+  const journeys = createJourneysService({ db, contacts, templates, segments, delivery, clock, ...(log ? { log } : {}) });
   const worker = createWorker([
+    { name: 'journey-events', run: () => journeys.processEvents() },
+    { name: 'journey-steps', run: () => journeys.runDue() },
     { name: 'campaigns', run: () => campaigns.processDue() },
     { name: 'dispatch', run: () => delivery.dispatchOnce() },
   ], log);
-  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, worker };
+  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, journeys, worker };
 }
 
 export type Services = ReturnType<typeof createServices>;

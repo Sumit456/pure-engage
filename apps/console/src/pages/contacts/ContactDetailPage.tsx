@@ -105,6 +105,21 @@ export function ContactDetailPage() {
       </div>
 
       <div className="pe-card pe-stack" style={{ marginBlockStart: 16 }}>
+        <h2>{t('contacts.journeys')}</h2>
+        {c.journeys.length ? (
+          <ul className="pe-plain-list">
+            {c.journeys.map((r) => (
+              <li key={r.id} className="pe-row">
+                <Link to={`/journeys/${r.journey_id}`}>{r.journey_name}</Link>
+                <Badge tone={r.status === 'active' ? 'brand' : r.status === 'completed' ? 'success' : 'neutral'}>{t(`journeys.runs.${r.status}`)}</Badge>
+                <small className="pe-muted">{formatDate(r.entered_at)}{r.exit_reason ? ` · ${r.exit_reason}` : ''}</small>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="pe-muted">{t('contacts.noJourneys')}</p>}
+      </div>
+
+      <div className="pe-card pe-stack" style={{ marginBlockStart: 16 }}>
         <h2>{t('nav.messages')}</h2>
         <MessageList contactId={c.id} compact />
       </div>

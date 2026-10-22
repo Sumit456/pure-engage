@@ -8,6 +8,23 @@ const base = { strictFilters: true, ownPropertyOnly: true, templates: {}, cache:
 const htmlEngine = new Liquid({ ...base, outputEscape: 'escape' });
 const textEngine = new Liquid(base);
 
+/**
+ * `{{ data.start | local_datetime: contact.timezone, 'ar' }}` → the time in the contact's zone and language,
+ * e.g. "Saturday 10 January, 10:30". Falls back to Asia/Dubai and English; invalid input renders as-is.
+ */
+export function localDateTime(value: unknown, timeZone?: unknown, locale?: unknown): string {
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(d.getTime())) return String(value ?? '');
+  const tz = typeof timeZone === 'string' && timeZone ? timeZone : 'Asia/Dubai';
+  const loc = locale === 'ar' ? 'ar-AE' : 'en-GB';
+  try {
+    return new Intl.DateTimeFormat(loc, { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+  } catch {
+    return new Intl.DateTimeFormat(loc, { timeZone: 'Asia/Dubai', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+  }
+}
+for (const engine of [htmlEngine, textEngine]) engine.registerFilter('local_datetime', localDateTime);
+
 export interface RenderContext {
   contact: Record<string, unknown>;
   data: Record<string, unknown>;

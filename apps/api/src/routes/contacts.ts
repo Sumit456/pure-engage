@@ -29,9 +29,9 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
   // Opening a contact is PHI access, so every view is audited.
   app.get('/api/contacts/:id', viewer, async (req) => {
     const { id } = idParam.parse(req.params);
-    const [contact, recentEvents, consentHistory] = await Promise.all([contacts.get(id), events.listForContact(id, { limit: 20 }), contacts.consentHistory(id, 20)]);
+    const [contact, recentEvents, consentHistory, journeys] = await Promise.all([contacts.get(id), events.listForContact(id, { limit: 20 }), contacts.consentHistory(id, 20), app.services.journeys.forContact(id)]);
     await audit(app.deps.db, actorOf(req), { action: 'contact.view', entityType: 'contact', entityId: id });
-    return { ...contact, recent_events: recentEvents, consent_history: consentHistory };
+    return { ...contact, recent_events: recentEvents, consent_history: consentHistory, journeys };
   });
 
   app.patch('/api/contacts/:id', marketer, async (req) => {

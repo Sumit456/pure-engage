@@ -123,3 +123,22 @@
 .pe-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: calc(var(--pe-space) * 2); }
 .pe-stat { display: flex; flex-direction: column; gap: 2px; }
 .pe-stat strong { font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+/* Journey builder */
+.pe-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.pe-fieldset legend { font-weight: 600; margin-block-end: var(--pe-space); }
+.pe-flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+.pe-flow__start, .pe-flow__end { align-self: center; padding: 6px 14px; border-radius: 999px; background: var(--pe-brand-100); color: var(--pe-brand-600); font-weight: 600; font-size: 0.9rem; }
+.pe-flow__end { background: var(--pe-surface-muted); color: var(--pe-text-muted); }
+.pe-step, .pe-flow__add, .pe-flow__end { position: relative; margin-block-start: 28px; }
+.pe-step::before, .pe-flow__add::before, .pe-flow__end::before { content: ''; position: absolute; inset-block-start: -28px; inset-inline-start: 50%; height: 28px; border-inline-start: 2px solid var(--pe-border); }
+.pe-step { border: 1px solid var(--pe-border); border-radius: var(--pe-radius); padding: calc(var(--pe-space) * 1.5); background: var(--pe-surface); box-shadow: var(--pe-shadow); display: flex; flex-direction: column; gap: var(--pe-space); }
+.pe-step__body { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--pe-space); }
+.pe-step select, .pe-step input { font: inherit; padding: 4px 8px; border-radius: var(--pe-radius-sm); border: 1px solid var(--pe-border); background: var(--pe-surface); color: var(--pe-text); max-width: 100%; }
+.pe-flow__add { align-self: center; }
+.pe-flow__branches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--pe-space) * 2); margin-block-start: 28px; position: relative; }
+.pe-flow__branch { display: flex; flex-direction: column; border-inline-start: 2px dashed var(--pe-border); padding-inline-start: calc(var(--pe-space) * 1.5); }
+.pe-flow__label { font-size: 0.8rem; font-weight: 600; color: var(--pe-text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.pe-narrow-wide { width: 10em; }
+.pe-ok { color: var(--pe-success); }
+@media (max-width: 760px) { .pe-flow__branches { grid-template-columns: 1fr; } }

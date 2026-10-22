@@ -8,7 +8,7 @@ export const contact = (over: Partial<ContactDetail> = {}): ContactDetail => ({
   id: crypto.randomUUID(), external_id: 'MBR-TEST-0001', email: 'test.member@example.com', phone: '+971500000001',
   first_name: 'Test', last_name: 'Member', preferred_language: 'ar', timezone: 'Asia/Dubai', attributes: {},
   consent: { email: { care: 'granted', marketing: 'denied' } }, created_at: '2026-01-01T08:00:00Z', updated_at: '2026-01-02T08:00:00Z',
-  recent_events: [], consent_history: [], ...over,
+  recent_events: [], consent_history: [], journeys: [], ...over,
 });
 
 export function installFakeApi(initial: Partial<FakeState> = {}): FakeState {

@@ -30,6 +30,7 @@ export interface EnqueueInput {
   /** For urgent care messages only (e.g. a same-day appointment change). */
   bypassQuietHours?: boolean;
   campaignId?: string | undefined;
+  journeyId?: string | undefined;
 }
 
 export interface DeliveryDeps {
@@ -85,6 +86,7 @@ export function createDeliveryService({ db, config, contacts, templates, signer,
       id, contact_id: contact.id, template_id: template.id, template_version: template.current_version,
       channel, purpose, locale, to_address: address, source: input.source, idempotency_key: input.idempotencyKey ?? null,
       campaign_id: input.campaignId ?? null,
+      journey_id: input.journeyId ?? null,
     };
 
     let suppressedReason: string | null = null;
@@ -242,7 +244,7 @@ export function createDeliveryService({ db, config, contacts, templates, signer,
 
     async list({ contactId, campaignId, status, channel, limit = 50, cursor }: { contactId?: string | undefined; campaignId?: string | undefined; status?: MessageStatus | undefined; channel?: Message['channel'] | undefined; limit?: number; cursor?: string | undefined }) {
       let q = db.selectFrom('messages').leftJoin('templates', 'templates.id', 'messages.template_id')
-        .select(['messages.id', 'messages.contact_id', 'messages.template_id', 'templates.name as template_name', 'messages.channel', 'messages.purpose', 'messages.locale', 'messages.to_address', 'messages.subject', 'messages.status', 'messages.status_reason', 'messages.provider', 'messages.source', 'messages.campaign_id', 'messages.created_at', 'messages.sent_at', 'messages.delivered_at', 'messages.opened_at', 'messages.clicked_at', 'messages.next_attempt_at'])
+        .select(['messages.id', 'messages.contact_id', 'messages.template_id', 'templates.name as template_name', 'messages.channel', 'messages.purpose', 'messages.locale', 'messages.to_address', 'messages.subject', 'messages.status', 'messages.status_reason', 'messages.provider', 'messages.source', 'messages.campaign_id', 'messages.journey_id', 'messages.created_at', 'messages.sent_at', 'messages.delivered_at', 'messages.opened_at', 'messages.clicked_at', 'messages.next_attempt_at'])
         .orderBy('messages.created_at', 'desc').orderBy('messages.id', 'desc').limit(Math.min(limit, 200) + 1);
       if (contactId) q = q.where('messages.contact_id', '=', contactId);
       if (campaignId) q = q.where('messages.campaign_id', '=', campaignId);

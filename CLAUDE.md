@@ -50,6 +50,8 @@ source of truth, and the PureNet mock is generated from it.
   parameter; operators come from fixed allowlists. New rule types need a test in `test/segments.test.ts`.
 - Background work (campaign fan-out, dispatch) claims rows with `SKIP LOCKED`. Lock a row that other rows
   reference by foreign key with `FOR NO KEY UPDATE`, not `FOR UPDATE`, or concurrent inserts deadlock.
+- Journeys (ADR-0005) react to events via `events.processed_at` in the worker, never inside a request. Any step
+  with side effects must be idempotent per run and step (see `journey:<run>:<step>` keys).
 - Delivery defaults to the sandbox. Tests must never reach a real provider: use the local SMTP server and the fake
   Twilio in `apps/api/test/delivery.test.ts`.
 

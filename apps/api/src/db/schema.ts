@@ -1,6 +1,6 @@
 // Table types for Kysely. Keep in step with src/db/migrations/.
 import type { ColumnType, Generated, Insertable, JSONColumnType, Selectable } from 'kysely';
-import type { ConsentMap, SegmentRules } from '@pure-engage/shared';
+import type { ConsentMap, JourneyDefinition, SegmentRules } from '@pure-engage/shared';
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
 type NullableTimestamp = ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
@@ -93,6 +93,7 @@ export interface EventsTable {
   occurred_at: Timestamp;
   received_at: Timestamp;
   idempotency_key: string | null;
+  processed_at: NullableTimestamp;
 }
 
 export type TemplateChannel = 'email' | 'sms';
@@ -155,6 +156,7 @@ export interface MessagesTable {
   opened_at: NullableTimestamp;
   clicked_at: NullableTimestamp;
   campaign_id: string | null;
+  journey_id: string | null;
 }
 
 export interface MessageEventsTable {
@@ -202,6 +204,47 @@ export interface CampaignsTable {
   updated_at: Timestamp;
 }
 
+export type JourneyStatus = 'draft' | 'active' | 'paused' | 'archived';
+
+export interface JourneysTable {
+  id: Generated<string>;
+  name: string;
+  description: Generated<string>;
+  status: Generated<JourneyStatus>;
+  definition: Json<JourneyDefinition>;
+  trigger_event: string;
+  created_by: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  activated_at: NullableTimestamp;
+}
+
+export interface JourneyEnrollmentsTable {
+  id: Generated<string>;
+  journey_id: string;
+  contact_id: string;
+  status: 'active' | 'completed' | 'exited';
+  current_step: string | null;
+  next_run_at: NullableTimestamp;
+  waiting_for: string | null;
+  context: Json<Record<string, unknown>>;
+  entry_key: string | null;
+  exit_reason: string | null;
+  entered_at: Timestamp;
+  updated_at: Timestamp;
+  completed_at: NullableTimestamp;
+}
+
+export interface JourneyStepLogTable {
+  id: Generated<string>;
+  enrollment_id: string;
+  journey_id: string;
+  step_id: string;
+  outcome: string;
+  detail: Json<Record<string, unknown>>;
+  at: Timestamp;
+}
+
 export interface Database {
   app_settings: AppSettingsTable;
   users: UsersTable;
@@ -218,12 +261,17 @@ export interface Database {
   suppressions: SuppressionsTable;
   segments: SegmentsTable;
   campaigns: CampaignsTable;
+  journeys: JourneysTable;
+  journey_enrollments: JourneyEnrollmentsTable;
+  journey_step_log: JourneyStepLogTable;
 }
 
 export type Template = Selectable<TemplatesTable>;
 export type Message = Selectable<MessagesTable>;
 export type Segment = Selectable<SegmentsTable>;
 export type Campaign = Selectable<CampaignsTable>;
+export type Journey = Selectable<JourneysTable>;
+export type Enrollment = Selectable<JourneyEnrollmentsTable>;
 
 export type User = Selectable<UsersTable>;
 export type Contact = Selectable<ContactsTable>;

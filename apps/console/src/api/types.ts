@@ -1,4 +1,4 @@
-import type { ConsentMap, GroupRule } from '@pure-engage/shared';
+import type { ConsentMap, GroupRule, JourneyDefinition } from '@pure-engage/shared';
 
 export type Role = 'viewer' | 'marketer' | 'admin';
 
@@ -40,6 +40,7 @@ export interface ConsentChange {
 export interface ContactDetail extends Contact {
   recent_events: ContactEvent[];
   consent_history: ConsentChange[];
+  journeys: { id: string; journey_id: string; journey_name: string; status: 'active' | 'completed' | 'exited'; current_step: string | null; next_run_at: string | null; exit_reason: string | null; entered_at: string; completed_at: string | null }[];
 }
 
 export interface Page<T> { data: T[]; next_cursor: string | null }
@@ -109,3 +110,17 @@ export interface Campaign {
 export interface CampaignSummary extends Campaign { template_name: string; channel: Channel; purpose: Purpose; segment_name: string; stats: CampaignStats }
 export interface CampaignDetail extends Campaign { template: { id: string; name: string; channel: Channel; purpose: Purpose }; segment: { id: string; name: string }; stats: CampaignStats }
 export interface CampaignEstimate { segment_size: number; eligible: number; channel: Channel; purpose: Purpose }
+
+export type JourneyStatus = 'draft' | 'active' | 'paused' | 'archived';
+export interface JourneyStats {
+  enrollments: { active: number; completed: number; exited: number };
+  steps: Record<string, Record<string, number>>;
+  messages: { total: number; sent: number };
+}
+export interface Journey { id: string; name: string; description: string; status: JourneyStatus; definition: JourneyDefinition; trigger_event: string; created_at: string; updated_at: string; activated_at: string | null; stats: JourneyStats }
+export interface JourneyDetail extends Journey { problems: { step?: string; message: string }[] }
+export interface JourneyRun {
+  id: string; contact_id: string; external_id: string | null; first_name: string | null; last_name: string | null; status: 'active' | 'completed' | 'exited';
+  current_step: string | null; next_run_at: string | null; waiting_for: string | null; exit_reason: string | null; entry_key: string | null; entered_at: string; completed_at: string | null;
+}
+export interface SimulationStep { step: string; type: string; at: string; outcome: string; detail?: Record<string, unknown> }

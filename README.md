@@ -16,7 +16,7 @@ and email/SMS delivery, and integrates with PureNet.
 | `packages/shared` | zod schemas and types shared by the API and console |
 | `packages/purenet-connector` | Provisional PureNet connector: OAuth, REST client, signed webhook receiver, mapping |
 | `docs/contracts/` | OpenAPI/AsyncAPI contracts (every element labelled CONFIRMED or INFERRED) + `ASSUMPTIONS.md` |
-| `docs/adr/` | Decisions: 0001 repo location, 0002 contract-first mock, 0003 stack and layout |
+| `docs/adr/` | Decisions: 0001 repo location, 0002 contract-first mock, 0003 stack and layout, 0004 messaging and delivery, 0005 journeys |
 | `docs/audit/orbit-audit.md` | Audit of `Sumit456/Orbit` (prior art only; no code reused) |
 | `mock/purenet/` | Prism mock of PureNet, smoke test, examples |
 | `scripts/` | `dev-db.sh` (local Postgres), `check-evidence.mjs`, `e2e-purenet.sh` |
@@ -42,6 +42,7 @@ npm run dev:console    # console on http://127.0.0.1:5173
 | Templates | `GET/POST /api/templates`, `GET/PUT/DELETE /api/templates/:id`, `…/versions`, `…/versions/:v/restore`, `POST /api/templates/preview` | viewer reads, marketer writes |
 | Segments | `GET/POST /api/segments`, `GET/PUT/DELETE /api/segments/:id`, `POST /api/segments/preview` | viewer reads, marketer writes |
 | Campaigns | `GET/POST /api/campaigns`, `GET/PUT /api/campaigns/:id`, `…/estimate`, `…/schedule`, `…/cancel`, `…/test` | viewer reads, marketer writes and sends |
+| Journeys | `GET/POST /api/journeys`, `GET/PUT/DELETE /api/journeys/:id`, `…/activate`, `…/pause`, `…/enrollments`, `POST /api/journeys/simulate`, `POST /api/journeys/starters/appointment-reminder` | viewer reads, marketer writes |
 | Messages | `GET /api/messages`, `GET /api/messages/:id` (audited), `GET /api/delivery/status` | viewer |
 | Public ingest | `POST /api/v1/track`, `POST /api/v1/messages/send` ([contract](docs/contracts/platform-ingest.openapi.yaml)) | `Authorization: Bearer pe_…` API key |
 | Recipients | `GET /t/o/:token` (open), `GET /t/c/:token` (click), `GET/POST /u/:token` (unsubscribe, RFC 8058) | signed tokens |

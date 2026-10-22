@@ -46,7 +46,7 @@
   "dashboard": {
     "title": "Dashboard",
     "hello": "Hello, {{name}}",
-    "welcome": "Contacts, consent, templates, messaging, segments and campaigns are live. Journeys arrive in the next milestone.",
+    "welcome": "Everything is live: contacts and consent, templates, messaging, segments, campaigns and journeys. Reports and settings come next.",
     "goContacts": "Go to contacts"
   },
   "contacts": {
@@ -77,7 +77,9 @@
       "timezone": "Time zone",
       "created_at": "Created",
       "updated_at": "Updated"
-    }
+    },
+    "journeys": "Journeys",
+    "noJourneys": "Not in any journeys."
   },
   "consent": {
     "title": "Consent",
@@ -307,5 +309,99 @@
       "pending": "Pending"
     },
     "segment": "Segment"
+  },
+  "journeys": {
+    "new": "New journey",
+    "backToList": "← All journeys",
+    "empty": "No journeys yet",
+    "emptyHint": "Journeys react to events (for example a PureNet booking) with timed, personal messages.",
+    "useStarter": "Start from appointment reminders",
+    "trigger": "Trigger",
+    "triggerEvent": "When this event happens",
+    "entryKey": "One run per (event property)",
+    "entryKeyHint": "e.g. appointment_id: one run per appointment",
+    "exitWhen": "Stop a run when",
+    "withSame": "with the same",
+    "matchProperty": "Property to match",
+    "addExit": "Add exit event",
+    "steps": "Steps",
+    "whenTriggered": "When {{event}} happens",
+    "end": "End",
+    "addStep": "Add step",
+    "addFirstStep": "Add the first step",
+    "removeStep": "Remove step",
+    "missingStep": "Missing step {{id}}",
+    "activate": "Activate",
+    "pause": "Pause",
+    "archive": "Archive",
+    "pauseToEdit": "This journey is running. Pause it to make changes; runs resume where they were.",
+    "checks": "Checks",
+    "noProblems": "No problems found. Ready to activate.",
+    "untilProperty": "Wait until the event's",
+    "property": "Event property",
+    "plus": "plus",
+    "offset": "Offset",
+    "ifPast": "If that time has passed:",
+    "ifPastContinue": "continue straight away",
+    "ifPastExit": "end the run",
+    "giveUpAfter": "Give up after",
+    "timeout": "Timeout",
+    "addAttribute": "Add attribute",
+    "simulate": "Try it out",
+    "simulateHint": "A dry run: shows the path, timing and who would receive each message. Nothing is sent or saved.",
+    "simulateAs": "As contact",
+    "assumeEvent": "Assume this event happens:",
+    "runSimulation": "Run simulation",
+    "type": {
+      "send": "Send message",
+      "wait": "Wait",
+      "wait_until": "Wait until",
+      "wait_for_event": "Wait for event",
+      "split": "If / else",
+      "update": "Update profile"
+    },
+    "branch": {
+      "yes": "Yes",
+      "no": "No",
+      "matched": "Event happened",
+      "timed_out": "Timed out"
+    },
+    "unit": {
+      "days": "days",
+      "hours": "hours",
+      "minutes": "minutes"
+    },
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "paused": "Paused",
+      "archived": "Archived"
+    },
+    "runs": {
+      "title": "Runs",
+      "active": "In progress",
+      "completed": "Completed",
+      "exited": "Stopped early",
+      "none": "No runs yet."
+    },
+    "outcome": {
+      "sent": "sent",
+      "not_sent": "not sent",
+      "failed": "failed",
+      "waiting": "waiting",
+      "time_passed": "time passed",
+      "timed_out": "timed out",
+      "event_matched": "event matched",
+      "yes": "yes",
+      "no": "no",
+      "updated": "updated",
+      "exited": "stopped",
+      "entered": "entered",
+      "would_send": "would send",
+      "would_not_send": "would not send",
+      "wait": "wait",
+      "exit": "end",
+      "update": "update"
+    }
   }
 }

@@ -17,6 +17,7 @@ import { templateRoutes } from './routes/templates.ts';
 import { messageRoutes } from './routes/messages.ts';
 import { publicRoutes } from './routes/public.ts';
 import { campaignRoutes, segmentRoutes } from './routes/campaigns.ts';
+import { journeyRoutes } from './routes/journeys.ts';
 
 export interface AppDeps {
   config: Config;
@@ -88,6 +89,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(publicRoutes);
   await app.register(segmentRoutes);
   await app.register(campaignRoutes);
+  await app.register(journeyRoutes);
   if (config.PURENET_WEBHOOK_SECRET) {
     await app.register(purenetRoutes, { webhookSecret: config.PURENET_WEBHOOK_SECRET, env: deps.purenetEnv });
   }
