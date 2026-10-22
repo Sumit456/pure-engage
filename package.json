@@ -4,14 +4,23 @@
   "private": true,
   "type": "module",
   "description": "PureHealth engagement platform: contracts, PureNet mock and (later) services.",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "lint:openapi": "REDOCLY_TELEMETRY=off redocly lint docs/contracts/purenet.openapi.yaml docs/contracts/platform-ingest.openapi.yaml",
+    "start": "node src/server.js",
+    "test": "node --test 'test/**/*.test.js'",
+    "e2e": "bash scripts/e2e.sh",
+    "lint:openapi": "REDOCLY_TELEMETRY=off redocly lint docs/contracts/purenet.openapi.yaml docs/contracts/purenet-oauth.openapi.yaml docs/contracts/platform-ingest.openapi.yaml",
     "lint:asyncapi": "SUPPRESS_NO_CONFIG_WARNING=1 asyncapi validate docs/contracts/purenet-events.asyncapi.yaml && asyncapi validate docs/contracts/platform-webhooks.asyncapi.yaml",
     "lint:contracts": "npm run lint:openapi && npm run lint:asyncapi",
     "check:evidence": "node scripts/check-evidence.mjs",
     "mock:purenet": "prism mock -h 127.0.0.1 -p 4010 docs/contracts/purenet.openapi.yaml",
+    "mock:purenet-oauth": "prism mock -h 127.0.0.1 -p 4011 docs/contracts/purenet-oauth.openapi.yaml",
+    "mocks": "npm run mock:purenet & npm run mock:purenet-oauth & wait",
     "smoke:purenet": "bash mock/purenet/smoke.sh",
+    "sync:member": "node scripts/sync-member.mjs",
+    "emit:events": "node scripts/emit-events.mjs",
     "scan:secrets": "if command -v gitleaks >/dev/null; then gitleaks git . --config .gitleaks.toml --redact; else docker run --rm -v \"$PWD:/repo\" zricethezav/gitleaks:v8.21.2 git /repo --config /repo/.gitleaks.toml --redact; fi"
   },
   "devDependencies": {

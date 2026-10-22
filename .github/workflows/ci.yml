@@ -16,6 +16,9 @@ jobs:
       - run: npm ci
       - run: npm run lint:contracts
       - run: npm run check:evidence
+      - run: npm test
+      - name: End-to-end against the PureNet mocks
+        run: npm run e2e
       - name: Smoke-test the PureNet mock
         run: |
           npm run mock:purenet > prism.log 2>&1 &
