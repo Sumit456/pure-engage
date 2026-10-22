@@ -7,6 +7,7 @@ import { HttpError, badRequest } from '../errors.ts';
 
 const listQuery = z.object({
   contact_id: z.string().uuid().optional(),
+  campaign_id: z.string().uuid().optional(),
   status: z.enum(['queued', 'deferred', 'sending', 'sent', 'delivered', 'failed', 'suppressed']).optional(),
   channel: z.enum(['email', 'sms']).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -35,7 +36,7 @@ export const messageRoutes: FastifyPluginAsync = async (app) => {
 
   app.get('/api/messages', { preHandler: requireUser('viewer') }, async (req) => {
     const q = listQuery.parse(req.query);
-    return delivery.list({ contactId: q.contact_id, status: q.status, channel: q.channel, limit: q.limit, cursor: q.cursor });
+    return delivery.list({ contactId: q.contact_id, campaignId: q.campaign_id, status: q.status, channel: q.channel, limit: q.limit, cursor: q.cursor });
   });
 
   // Message bodies contain personal data, so opening one is audited like a contact view.

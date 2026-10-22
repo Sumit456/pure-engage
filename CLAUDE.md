@@ -46,6 +46,10 @@ source of truth, and the PureNet mock is generated from it.
 - Contacts resolve by `contact_id` → `external_id` → `email`. Email-only matching refuses ambiguous matches.
 - Templates are `care` or `marketing`; the purpose decides which consent is needed. Delivery policy runs at
   enqueue *and* again before sending (ADR-0004). Never add a code path that sends without `canSend`.
+- Segment rules are compiled to SQL in `apps/api/src/services/segments.ts`. Every user value must stay a bound
+  parameter; operators come from fixed allowlists. New rule types need a test in `test/segments.test.ts`.
+- Background work (campaign fan-out, dispatch) claims rows with `SKIP LOCKED`. Lock a row that other rows
+  reference by foreign key with `FOR NO KEY UPDATE`, not `FOR UPDATE`, or concurrent inserts deadlock.
 - Delivery defaults to the sandbox. Tests must never reach a real provider: use the local SMTP server and the fake
   Twilio in `apps/api/test/delivery.test.ts`.
 

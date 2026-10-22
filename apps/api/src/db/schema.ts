@@ -1,6 +1,6 @@
 // Table types for Kysely. Keep in step with src/db/migrations/.
 import type { ColumnType, Generated, Insertable, JSONColumnType, Selectable } from 'kysely';
-import type { ConsentMap } from '@pure-engage/shared';
+import type { ConsentMap, SegmentRules } from '@pure-engage/shared';
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
 type NullableTimestamp = ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
@@ -154,6 +154,7 @@ export interface MessagesTable {
   delivered_at: NullableTimestamp;
   opened_at: NullableTimestamp;
   clicked_at: NullableTimestamp;
+  campaign_id: string | null;
 }
 
 export interface MessageEventsTable {
@@ -172,6 +173,35 @@ export interface SuppressionsTable {
   created_at: Timestamp;
 }
 
+export interface SegmentsTable {
+  id: Generated<string>;
+  name: string;
+  description: Generated<string>;
+  rules: Json<SegmentRules>;
+  created_by: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  archived_at: NullableTimestamp;
+}
+
+export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'cancelled';
+
+export interface CampaignsTable {
+  id: Generated<string>;
+  name: string;
+  template_id: string;
+  segment_id: string;
+  status: Generated<CampaignStatus>;
+  scheduled_at: NullableTimestamp;
+  started_at: NullableTimestamp;
+  completed_at: NullableTimestamp;
+  cursor_contact_id: string | null;
+  enqueued_count: Generated<number>;
+  created_by: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
 export interface Database {
   app_settings: AppSettingsTable;
   users: UsersTable;
@@ -186,10 +216,14 @@ export interface Database {
   messages: MessagesTable;
   message_events: MessageEventsTable;
   suppressions: SuppressionsTable;
+  segments: SegmentsTable;
+  campaigns: CampaignsTable;
 }
 
 export type Template = Selectable<TemplatesTable>;
 export type Message = Selectable<MessagesTable>;
+export type Segment = Selectable<SegmentsTable>;
+export type Campaign = Selectable<CampaignsTable>;
 
 export type User = Selectable<UsersTable>;
 export type Contact = Selectable<ContactsTable>;

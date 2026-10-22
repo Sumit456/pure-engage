@@ -40,6 +40,8 @@ npm run dev:console    # console on http://127.0.0.1:5173
 | Contacts | `GET/POST /api/contacts`, `GET/PATCH/DELETE /api/contacts/:id`, `GET /api/contacts/:id/events` | viewer reads, marketer writes, admin deletes; every contact view is audited |
 | Admin | `/api/users`, `/api/api-keys`, `GET /api/audit` | admin |
 | Templates | `GET/POST /api/templates`, `GET/PUT/DELETE /api/templates/:id`, `…/versions`, `…/versions/:v/restore`, `POST /api/templates/preview` | viewer reads, marketer writes |
+| Segments | `GET/POST /api/segments`, `GET/PUT/DELETE /api/segments/:id`, `POST /api/segments/preview` | viewer reads, marketer writes |
+| Campaigns | `GET/POST /api/campaigns`, `GET/PUT /api/campaigns/:id`, `…/estimate`, `…/schedule`, `…/cancel`, `…/test` | viewer reads, marketer writes and sends |
 | Messages | `GET /api/messages`, `GET /api/messages/:id` (audited), `GET /api/delivery/status` | viewer |
 | Public ingest | `POST /api/v1/track`, `POST /api/v1/messages/send` ([contract](docs/contracts/platform-ingest.openapi.yaml)) | `Authorization: Bearer pe_…` API key |
 | Recipients | `GET /t/o/:token` (open), `GET /t/c/:token` (click), `GET/POST /u/:token` (unsubscribe, RFC 8058) | signed tokens |

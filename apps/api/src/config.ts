@@ -36,6 +36,8 @@ const schema = z.object({
   /** Dispatcher poll interval; 0 disables the in-process dispatcher (tests drive it directly). */
   PE_DISPATCH_INTERVAL_MS: z.coerce.number().int().min(0).default(2000),
   PE_TRACKING_ENABLED: bool.default('true'),
+  /** Contacts enqueued per campaign batch (each batch holds a row lock briefly). */
+  PE_CAMPAIGN_BATCH_SIZE: z.coerce.number().int().min(1).max(10_000).default(500),
 
   // SMTP (email)
   PE_SMTP_URL: z.string().optional(),

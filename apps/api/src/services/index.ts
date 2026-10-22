@@ -8,6 +8,9 @@ import { createIngestService } from './ingest.ts';
 import { selectProviders } from './providers.ts';
 import { createTemplatesService } from './templates.ts';
 import { createLinkSigner } from './tracking.ts';
+import { createSegmentsService } from './segments.ts';
+import { createCampaignsService } from './campaigns.ts';
+import { createWorker } from './worker.ts';
 
 export interface ServiceOptions {
   clock?: () => Date;
@@ -23,7 +26,13 @@ export function createServices(db: DB, config: Config, { clock = () => new Date(
   const signer = createLinkSigner(config.trackingSecret, config.PE_PUBLIC_URL);
   const providers = selectProviders(config);
   const delivery = createDeliveryService({ db, config, contacts, templates, signer, providers, clock, ...(log ? { log } : {}) });
-  return { auth, contacts, events, ingest, templates, signer, providers, delivery };
+  const segments = createSegmentsService(db, clock);
+  const campaigns = createCampaignsService({ db, segments, templates, delivery, clock, batchSize: config.PE_CAMPAIGN_BATCH_SIZE, ...(log ? { log } : {}) });
+  const worker = createWorker([
+    { name: 'campaigns', run: () => campaigns.processDue() },
+    { name: 'dispatch', run: () => delivery.dispatchOnce() },
+  ], log);
+  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, worker };
 }
 
 export type Services = ReturnType<typeof createServices>;

@@ -1,4 +1,4 @@
-import type { ConsentMap } from '@pure-engage/shared';
+import type { ConsentMap, GroupRule } from '@pure-engage/shared';
 
 export type Role = 'viewer' | 'marketer' | 'admin';
 
@@ -93,3 +93,19 @@ export interface MessageDetail extends MessageSummary {
   events: { id: string; type: string; detail: string | null; at: string }[];
 }
 export interface DeliveryStatus { mode: 'sandbox' | 'live'; providers: { email: string; sms: string }; allowlist: boolean }
+
+export interface Segment { id: string; name: string; description: string; rules: GroupRule; size: number; created_at: string; updated_at: string }
+export interface SegmentPreview { count: number; sample: Pick<Contact, 'id' | 'external_id' | 'first_name' | 'last_name' | 'email'>[] }
+
+export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'cancelled';
+export interface CampaignStats {
+  targeted: number; pending: number; sent: number; delivered: number; failed: number; suppressed: number;
+  suppressed_by_reason: Record<string, number>; opened: number; clicked: number;
+}
+export interface Campaign {
+  id: string; name: string; template_id: string; segment_id: string; status: CampaignStatus;
+  scheduled_at: string | null; started_at: string | null; completed_at: string | null; enqueued_count: number; created_at: string; updated_at: string;
+}
+export interface CampaignSummary extends Campaign { template_name: string; channel: Channel; purpose: Purpose; segment_name: string; stats: CampaignStats }
+export interface CampaignDetail extends Campaign { template: { id: string; name: string; channel: Channel; purpose: Purpose }; segment: { id: string; name: string }; stats: CampaignStats }
+export interface CampaignEstimate { segment_size: number; eligible: number; channel: Channel; purpose: Purpose }

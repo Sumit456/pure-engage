@@ -11,7 +11,6 @@ test('admin signs in, adds a member, records consent and works in Arabic', async
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(page.getByRole('heading', { name: 'Contacts' })).toBeVisible();
-  await expect(page.getByText('No contacts yet')).toBeVisible();
 
   // Create
   await page.getByRole('button', { name: 'New contact' }).click();

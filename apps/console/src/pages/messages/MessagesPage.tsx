@@ -16,16 +16,18 @@ export function MessageList({ contactId, compact = false }: { contactId?: string
   const [params, setParams] = useSearchParams();
   const status = contactId ? '' : params.get('status') ?? '';
   const channel = contactId ? '' : params.get('channel') ?? '';
+  const campaign = contactId ? '' : params.get('campaign') ?? '';
   const setFilter = (k: string, v: string) => { const next = new URLSearchParams(params); if (v) next.set(k, v); else next.delete(k); setParams(next, { replace: true }); };
 
   const messages = useInfiniteQuery({
-    queryKey: ['messages', { contactId, status, channel }],
+    queryKey: ['messages', { contactId, status, channel, campaign }],
     initialPageParam: '',
     queryFn: ({ pageParam, signal }) => {
       const sp = new URLSearchParams({ limit: compact ? '10' : '50' });
       if (contactId) sp.set('contact_id', contactId);
       if (status) sp.set('status', status);
       if (channel) sp.set('channel', channel);
+      if (campaign) sp.set('campaign_id', campaign);
       if (pageParam) sp.set('cursor', pageParam);
       return api<Page<MessageSummary>>(`/api/messages?${sp}`, { signal });
     },
@@ -48,6 +50,7 @@ export function MessageList({ contactId, compact = false }: { contactId?: string
             <option value="email">{t('consent.channel_email')}</option>
             <option value="sms">{t('consent.channel_sms')}</option>
           </select>
+          {campaign && <Button variant="ghost" onClick={() => setFilter('campaign', '')}>{t('messages.clearCampaign')} ×</Button>}
         </div>
       )}
       <ErrorBanner error={messages.error} />

@@ -24,7 +24,8 @@
     "cancel": "Cancel",
     "edit": "Edit",
     "delete": "Delete",
-    "source": "Source"
+    "source": "Source",
+    "clear": "Clear"
   },
   "errors": {
     "generic": "Something went wrong. Please try again."
@@ -45,7 +46,7 @@
   "dashboard": {
     "title": "Dashboard",
     "hello": "Hello, {{name}}",
-    "welcome": "Contacts, consent, templates and messaging are live. Segments, campaigns and journeys arrive in the next milestones.",
+    "welcome": "Contacts, consent, templates, messaging, segments and campaigns are live. Journeys arrive in the next milestone.",
     "goContacts": "Go to contacts"
   },
   "contacts": {
@@ -177,7 +178,8 @@
       "frequency_cap": "Weekly cap reached",
       "quiet_hours": "Quiet hours",
       "not_in_allowlist": "Not on allowlist",
-      "empty_body": "Empty message"
+      "empty_body": "Empty message",
+      "campaign_cancelled": "Campaign cancelled"
     },
     "event": {
       "sent": "Sent",
@@ -187,6 +189,123 @@
       "click": "Clicked",
       "unsubscribe": "Unsubscribed",
       "retry": "Will retry"
+    },
+    "clearCampaign": "Campaign filter"
+  },
+  "segments": {
+    "new": "New segment",
+    "backToList": "← All segments",
+    "empty": "No segments yet",
+    "emptyHint": "Segments are saved audiences built from profile fields, attributes, consent and activity.",
+    "size": "Contacts",
+    "rules": "Who's in this segment",
+    "audience": "Audience",
+    "contactsMatch": "contacts match right now",
+    "andMore": "and {{n}} more",
+    "matchLabel": "Match",
+    "matchAll": "Match all of",
+    "matchAny": "Match any of",
+    "emptyAnd": "No rules yet: everyone matches.",
+    "emptyOr": "No rules yet: no one matches.",
+    "add": "Add:",
+    "removeGroup": "Remove group",
+    "removeRule": "Remove rule",
+    "is": "is",
+    "fieldLabel": "Field",
+    "operatorLabel": "Operator",
+    "valueLabel": "Value",
+    "attributeLabel": "Attribute name",
+    "attributePlaceholder": "attribute name",
+    "statusLabel": "Status",
+    "eventLabel": "Event name",
+    "countLabel": "Count",
+    "withinLabel": "Within days",
+    "times": "time(s)",
+    "inLast": "in the last",
+    "days": "days",
+    "type": {
+      "field": "Profile",
+      "attribute": "Attribute",
+      "consent": "Consent",
+      "event": "Activity",
+      "group": "Group"
+    },
+    "field": {
+      "external_id": "Member ID",
+      "email": "Email",
+      "phone": "Mobile",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "preferred_language": "Preferred language",
+      "timezone": "Time zone",
+      "created_at": "Created"
+    },
+    "op": {
+      "eq": "is",
+      "neq": "is not",
+      "contains": "contains",
+      "not_contains": "doesn't contain",
+      "starts_with": "starts with",
+      "in": "is one of",
+      "exists": "is set",
+      "not_exists": "is empty",
+      "gt": ">",
+      "gte": "≥",
+      "lt": "<",
+      "lte": "≤",
+      "within_last_days": "in the last",
+      "more_than_days_ago": "more than … ago",
+      "at_least": "happened at least",
+      "at_most": "happened at most",
+      "none": "never happened"
     }
+  },
+  "campaigns": {
+    "new": "New campaign",
+    "backToList": "← All campaigns",
+    "empty": "No campaigns yet",
+    "emptyHint": "A campaign sends one template to a segment, now or at a scheduled time.",
+    "when": "When",
+    "choose": "Choose…",
+    "saveDraft": "Save draft",
+    "audience": "Audience",
+    "eligible": "can receive it",
+    "inSegment": "in the segment",
+    "eligibleExplainer": "Eligible means they have an address and granted {{purpose}} consent for {{channel}}. Everyone else is recorded as not sent.",
+    "testSend": "Test send",
+    "testTo": "Send to",
+    "testPlaceholder": "Find a contact…",
+    "sendTest": "Send test",
+    "viewMessage": "View message",
+    "sendOrSchedule": "Send or schedule",
+    "sendNow": "Send now",
+    "later": "Schedule for later",
+    "schedule": "Schedule",
+    "scheduledFor": "Scheduled for",
+    "confirmAudience": "This will go to up to {{n}} contacts, subject to consent and quiet hours at the time of sending.",
+    "cancel": "Cancel campaign",
+    "started": "Started",
+    "completed": "Completed",
+    "results": "Results",
+    "notSentBecause": "Not sent because:",
+    "seeMessages": "See all messages for this campaign →",
+    "status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "sending": "Sending",
+      "sent": "Sent",
+      "cancelled": "Cancelled"
+    },
+    "stat": {
+      "targeted": "Targeted",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "opened": "Opened",
+      "clicked": "Clicked",
+      "suppressed": "Not sent",
+      "failed": "Failed",
+      "pending": "Pending"
+    },
+    "segment": "Segment"
   }
 }

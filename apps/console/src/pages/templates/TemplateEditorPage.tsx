@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { smsInfo } from '@pure-engage/shared';
 import { api, ApiError } from '../../api/client.ts';
-import type { Channel, Contact, EmailPart, Page, Purpose, SmsPart, TemplateContent, TemplateDetail, TemplateVersion } from '../../api/types.ts';
+import type { Channel, Contact, EmailPart, Purpose, SmsPart, TemplateContent, TemplateDetail, TemplateVersion } from '../../api/types.ts';
 import { hasRole, useUser } from '../../auth/auth.tsx';
 import { Badge, Button, ErrorBanner, SelectField, Spinner, TextField, useFormatDate } from '../../components/ui.tsx';
-import { displayName } from '../contacts/ContactsPage.tsx';
+import { ContactPicker } from '../../components/ContactPicker.tsx';
 
 type Locale = 'en' | 'ar';
 interface Draft { name: string; description: string; channel: Channel; purpose: Purpose; content: Record<Locale, EmailPart & SmsPart> }
@@ -156,7 +156,7 @@ export function TemplateEditorPage() {
             <div className="pe-row">
               <h2 style={{ margin: 0 }}>{t('templates.preview')}</h2>
               <span className="pe-spacer" />
-              <PreviewContactPicker value={previewContact} onChange={setPreviewContact} />
+              <ContactPicker label={t('templates.previewAs')} placeholder={t('templates.previewAsPlaceholder')} value={previewContact} onChange={setPreviewContact} />
             </div>
             {preview.error ? <ErrorBanner error={preview.error} /> : !hasContent ? <p className="pe-muted">{t('templates.previewEmpty')}</p> : !preview.data ? <Spinner /> : draft.channel === 'email' ? (
               <>
@@ -188,30 +188,5 @@ export function TemplateEditorPage() {
         )}
       </form>
     </section>
-  );
-}
-
-function PreviewContactPicker({ value, onChange }: { value: Contact | null; onChange: (c: Contact | null) => void }) {
-  const { t } = useTranslation();
-  const [q, setQ] = useState('');
-  const debounced = useDebouncedValue(q.trim(), 300);
-  const results = useQuery({
-    queryKey: ['contacts', 'picker', debounced],
-    enabled: debounced.length > 1,
-    queryFn: ({ signal }) => api<Page<Contact>>(`/api/contacts?limit=5&q=${encodeURIComponent(debounced)}`, { signal }),
-  });
-  if (value) {
-    return <span className="pe-row"><span className="pe-muted">{t('templates.previewAs')}</span> <Badge tone="brand">{displayName(value)}</Badge><Button variant="ghost" onClick={() => onChange(null)}>×</Button></span>;
-  }
-  return (
-    <div className="pe-picker">
-      <input className="pe-search" type="search" placeholder={t('templates.previewAsPlaceholder')} aria-label={t('templates.previewAs')} value={q} onChange={(e) => setQ(e.target.value)} />
-      {results.data && debounced.length > 1 && (
-        <ul className="pe-picker__list" role="listbox">
-          {results.data.data.map((c) => <li key={c.id}><button type="button" role="option" aria-selected={false} onClick={() => { onChange(c); setQ(''); }}>{displayName(c)}</button></li>)}
-          {!results.data.data.length && <li className="pe-muted">{t('contacts.noMatches')}</li>}
-        </ul>
-      )}
-    </div>
   );
 }

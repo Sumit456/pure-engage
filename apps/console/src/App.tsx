@@ -11,8 +11,10 @@ import { TemplatesPage } from './pages/templates/TemplatesPage.tsx';
 import { TemplateEditorPage } from './pages/templates/TemplateEditorPage.tsx';
 import { MessagesPage } from './pages/messages/MessagesPage.tsx';
 import { MessageDetailPage } from './pages/messages/MessageDetailPage.tsx';
+import { SegmentEditorPage, SegmentsPage } from './pages/segments/SegmentsPage.tsx';
+import { CampaignPage, CampaignsPage } from './pages/campaigns/CampaignsPage.tsx';
 
-const BUILT = new Set(['dashboard', 'contacts', 'templates', 'messages']);
+const BUILT = new Set(['dashboard', 'contacts', 'templates', 'messages', 'segments', 'campaigns']);
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <Login /> },
@@ -25,6 +27,10 @@ export const routes: RouteObject[] = [
       { path: 'contacts/:id', element: <ContactDetailPage /> },
       { path: 'templates', element: <TemplatesPage /> },
       { path: 'templates/:id', element: <TemplateEditorPage /> },
+      { path: 'segments', element: <SegmentsPage /> },
+      { path: 'segments/:id', element: <SegmentEditorPage /> },
+      { path: 'campaigns', element: <CampaignsPage /> },
+      { path: 'campaigns/:id', element: <CampaignPage /> },
       { path: 'messages', element: <MessagesPage /> },
       { path: 'messages/:id', element: <MessageDetailPage /> },
       ...NAV.filter((k) => !BUILT.has(k)).map((k) => ({ path: k, element: <ComingSoon section={k} /> })),
