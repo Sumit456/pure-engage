@@ -11,9 +11,24 @@ type EB = ExpressionBuilder<Database, 'contacts'>;
 const NUMERIC = /^-?\d+(\.\d+)?$/;
 const likeEscape = (s: string) => s.replace(/[\\%_]/g, (m) => `\\${m}`);
 
+/** Shape (zod) plus meaning: everything compile() would reject is caught here, before any query is built. */
 export function parseRules(input: unknown): SegmentRules {
   const parsed = segmentRulesSchema.safeParse(input);
   if (!parsed.success) throw badRequest('Invalid segment rules', parsed.error.issues.map((i) => ({ path: `rules.${i.path.join('.')}`, message: i.message })));
+  const issues: { path: string; message: string }[] = [];
+  const check = (rule: SegmentRule, path: string) => {
+    if (rule.type === 'group') return rule.rules.forEach((r, i) => check(r, `${path}.rules.${i}`));
+    if (rule.type === 'field') {
+      const dateOp = rule.op === 'within_last_days' || rule.op === 'more_than_days_ago';
+      if (dateOp !== (rule.field === 'created_at')) issues.push({ path, message: dateOp ? `"${rule.op}" only applies to created_at` : 'created_at needs "within_last_days" or "more_than_days_ago"' });
+      if (dateOp && !(Number.isInteger(Number(rule.value)) && Number(rule.value) >= 0)) issues.push({ path, message: 'Days must be a whole number' });
+    }
+    if (rule.type === 'attribute' && ['gt', 'gte', 'lt', 'lte'].includes(rule.op) && typeof rule.value !== 'number' && !NUMERIC.test(String(rule.value))) {
+      issues.push({ path, message: `"${rule.op}" needs a number` });
+    }
+  };
+  check(parsed.data as SegmentRules, 'rules');
+  if (issues.length) throw badRequest('Invalid segment rules', issues);
   return parsed.data as SegmentRules;
 }
 
