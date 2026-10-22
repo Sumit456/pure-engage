@@ -19,12 +19,12 @@ beforeAll(async () => {
   });
   await new Promise<void>((r) => fake.listen(0, '127.0.0.1', r));
   const port = (fake.address() as { port: number }).port;
-  ctx = await testApp({ PURENET_WEBHOOK_SECRET: SECRET }, {
+  ctx = await testApp({ PURENET_WEBHOOK_SECRET: SECRET }, { purenetEnv: {
     PURENET_BASE_URL: `http://127.0.0.1:${port}`,
     PURENET_TOKEN_URL: `http://127.0.0.1:${port}/oauth2/token`,
     PURENET_CLIENT_ID: 'c',
     PURENET_CLIENT_SECRET: 's',
-  });
+  } });
 });
 afterAll(async () => { await ctx.close(); await new Promise((r) => fake.close(r)); });
 beforeEach(async () => { await truncateAll(ctx.db); });

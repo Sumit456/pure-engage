@@ -45,7 +45,7 @@
   "dashboard": {
     "title": "Dashboard",
     "hello": "Hello, {{name}}",
-    "welcome": "Contacts and consent are live. Templates, campaigns and journeys arrive in the next milestones.",
+    "welcome": "Contacts, consent, templates and messaging are live. Segments, campaigns and journeys arrive in the next milestones.",
     "goContacts": "Go to contacts"
   },
   "contacts": {
@@ -96,6 +96,97 @@
       "granted": "Granted",
       "denied": "Denied",
       "unknown": "Unknown"
+    }
+  },
+  "delivery": {
+    "sandboxBanner": "Sandbox mode: messages are recorded in the outbox but nothing is sent to real people.",
+    "allowlistBanner": "Live mode with an allowlist: only allowlisted addresses receive messages."
+  },
+  "templates": {
+    "new": "New template",
+    "create": "Create template",
+    "saveVersion": "Save new version",
+    "untitled": "Untitled template",
+    "backToList": "← All templates",
+    "empty": "No templates yet",
+    "emptyHint": "Create an email or SMS template to send care and marketing messages.",
+    "version": "Version",
+    "current": "Current",
+    "restore": "Restore",
+    "history": "Version history",
+    "language": "Language",
+    "optional": "optional",
+    "preview": "Preview",
+    "previewEmpty": "Write some content to see a preview.",
+    "previewAs": "Preview as",
+    "previewAsPlaceholder": "Preview as a contact…",
+    "fallbackNote": "No Arabic version yet, so Arabic-speaking contacts get the English version.",
+    "purposeCare": "Care messages need the contact's care consent for the channel.",
+    "purposeMarketing": "Marketing messages need marketing consent, include an unsubscribe link and count toward the weekly cap.",
+    "textPlaceholder": "Optional. Generated from the HTML when empty.",
+    "smsCounter": "{{units}} characters · {{segments}} segment(s) · {{encoding}}",
+    "variablesTitle": "Personalisation variables",
+    "variablesData": "values sent with the trigger (for example the appointment)",
+    "field": {
+      "name": "Name",
+      "channel": "Channel",
+      "purpose": "Purpose",
+      "description": "Description",
+      "subject": "Subject",
+      "html": "HTML body",
+      "text": "Plain-text body",
+      "body": "Message"
+    }
+  },
+  "messages": {
+    "empty": "No messages yet",
+    "message": "Message",
+    "backToList": "← All messages",
+    "created": "Created",
+    "to": "Recipient",
+    "template": "Template",
+    "statusLabel": "Status",
+    "engagement": "Engagement",
+    "opened": "Opened",
+    "clicked": "Clicked",
+    "provider": "Provider",
+    "nextAttempt": "Next attempt",
+    "sentAt": "Sent",
+    "attempts": "Attempts",
+    "timeline": "Timeline",
+    "noEvents": "No delivery events yet.",
+    "content": "Content",
+    "suppressedNoContent": "This message was not sent, so no content was rendered or stored.",
+    "filterStatus": "Filter by status",
+    "filterChannel": "Filter by channel",
+    "allStatuses": "All statuses",
+    "allChannels": "All channels",
+    "status": {
+      "queued": "Queued",
+      "deferred": "Deferred",
+      "sending": "Sending",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "failed": "Failed",
+      "suppressed": "Not sent"
+    },
+    "reason": {
+      "no_consent": "No consent",
+      "no_address": "No address",
+      "suppressed_address": "Address suppressed",
+      "frequency_cap": "Weekly cap reached",
+      "quiet_hours": "Quiet hours",
+      "not_in_allowlist": "Not on allowlist",
+      "empty_body": "Empty message"
+    },
+    "event": {
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "failed": "Failed",
+      "open": "Opened",
+      "click": "Clicked",
+      "unsubscribe": "Unsubscribed",
+      "retry": "Will retry"
     }
   }
 }

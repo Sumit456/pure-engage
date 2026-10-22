@@ -9,6 +9,7 @@ import { Badge, Button, Dialog, EmptyState, ErrorBanner, Ltr, Spinner, useFormat
 import { ConsentMatrix } from './ConsentMatrix.tsx';
 import { ContactFormDialog } from './ContactForm.tsx';
 import { displayName } from './ContactsPage.tsx';
+import { MessageList } from '../messages/MessagesPage.tsx';
 
 export function ContactDetailPage() {
   const { id = '' } = useParams();
@@ -101,6 +102,11 @@ export function ContactDetailPage() {
             ))}
           </ul>
         ) : <p className="pe-muted">{t('contacts.noActivity')}</p>}
+      </div>
+
+      <div className="pe-card pe-stack" style={{ marginBlockStart: 16 }}>
+        <h2>{t('nav.messages')}</h2>
+        <MessageList contactId={c.id} compact />
       </div>
 
       {editing && <ContactFormDialog open contact={c} onClose={() => setEditing(false)} />}

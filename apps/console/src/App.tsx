@@ -7,8 +7,12 @@ import { ComingSoon } from './pages/ComingSoon.tsx';
 import { Login } from './pages/Login.tsx';
 import { ContactsPage } from './pages/contacts/ContactsPage.tsx';
 import { ContactDetailPage } from './pages/contacts/ContactDetailPage.tsx';
+import { TemplatesPage } from './pages/templates/TemplatesPage.tsx';
+import { TemplateEditorPage } from './pages/templates/TemplateEditorPage.tsx';
+import { MessagesPage } from './pages/messages/MessagesPage.tsx';
+import { MessageDetailPage } from './pages/messages/MessageDetailPage.tsx';
 
-const BUILT = new Set(['dashboard', 'contacts']);
+const BUILT = new Set(['dashboard', 'contacts', 'templates', 'messages']);
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <Login /> },
@@ -19,6 +23,10 @@ export const routes: RouteObject[] = [
       { index: true, element: <Dashboard /> },
       { path: 'contacts', element: <ContactsPage /> },
       { path: 'contacts/:id', element: <ContactDetailPage /> },
+      { path: 'templates', element: <TemplatesPage /> },
+      { path: 'templates/:id', element: <TemplateEditorPage /> },
+      { path: 'messages', element: <MessagesPage /> },
+      { path: 'messages/:id', element: <MessageDetailPage /> },
       ...NAV.filter((k) => !BUILT.has(k)).map((k) => ({ path: k, element: <ComingSoon section={k} /> })),
     ],
   },

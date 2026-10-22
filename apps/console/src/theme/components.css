@@ -87,3 +87,23 @@
 
 /* Bidi isolation for LTR values (phones, emails, IDs) inside RTL text. */
 .pe-ltr { unicode-bidi: isolate; direction: ltr; }
+
+/* Tabs */
+.pe-tabs { display: flex; gap: 4px; border-block-end: 1px solid var(--pe-border); }
+.pe-tab { font: inherit; background: none; border: 0; border-block-end: 2px solid transparent; padding: 8px 12px; cursor: pointer; color: var(--pe-text-muted); }
+.pe-tab[aria-selected='true'] { color: var(--pe-brand-600); border-block-end-color: var(--pe-brand-600); font-weight: 600; }
+
+/* Editors and previews */
+.pe-field textarea { font: inherit; padding: 8px 12px; border-radius: var(--pe-radius-sm); border: 1px solid var(--pe-border); background: var(--pe-surface); color: var(--pe-text); resize: vertical; }
+.pe-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important; font-size: 0.85rem !important; }
+.pe-preview { width: 100%; min-height: 420px; border: 1px solid var(--pe-border); border-radius: var(--pe-radius-sm); background: #fff; }
+.pe-sms-bubble { align-self: flex-start; max-width: 320px; padding: 10px 14px; border-radius: 16px; background: var(--pe-surface-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Picker */
+.pe-picker { position: relative; }
+.pe-picker__list { position: absolute; inset-inline-end: 0; z-index: 5; list-style: none; margin: 4px 0 0; padding: 4px; min-width: 220px; background: var(--pe-surface); border: 1px solid var(--pe-border); border-radius: var(--pe-radius-sm); box-shadow: var(--pe-shadow); }
+.pe-picker__list button { width: 100%; text-align: start; font: inherit; background: none; border: 0; padding: 6px 8px; border-radius: 4px; cursor: pointer; color: var(--pe-text); }
+.pe-picker__list button:hover { background: var(--pe-surface-muted); }
+
+/* Delivery mode banner */
+.pe-banner { padding: 6px calc(var(--pe-space) * 3); font-size: 0.85rem; background: color-mix(in srgb, var(--pe-warning) 14%, var(--pe-surface)); color: var(--pe-text); border-block-end: 1px solid var(--pe-border); }

@@ -95,6 +95,83 @@ export interface EventsTable {
   idempotency_key: string | null;
 }
 
+export type TemplateChannel = 'email' | 'sms';
+export type MessagePurpose = 'care' | 'marketing';
+export type Locale = 'en' | 'ar';
+
+export interface EmailContent { subject: string; html: string; text?: string | undefined }
+export interface SmsContent { body: string }
+/** One entry per locale; `en` is required, `ar` optional (falls back to `en`). */
+export type TemplateContent = { en: EmailContent | SmsContent; ar?: EmailContent | SmsContent | undefined };
+
+export interface TemplatesTable {
+  id: Generated<string>;
+  name: string;
+  channel: TemplateChannel;
+  purpose: MessagePurpose;
+  description: Generated<string>;
+  current_version: Generated<number>;
+  created_by: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  archived_at: NullableTimestamp;
+}
+
+export interface TemplateVersionsTable {
+  id: Generated<string>;
+  template_id: string;
+  version: number;
+  content: Json<TemplateContent>;
+  created_by: string | null;
+  created_at: Timestamp;
+}
+
+export type MessageStatus = 'queued' | 'deferred' | 'sending' | 'sent' | 'delivered' | 'failed' | 'suppressed';
+
+export interface MessagesTable {
+  id: Generated<string>;
+  contact_id: string;
+  template_id: string | null;
+  template_version: number | null;
+  channel: TemplateChannel;
+  purpose: MessagePurpose;
+  locale: Locale;
+  to_address: string | null;
+  subject: string | null;
+  body_html: string | null;
+  body_text: string | null;
+  status: MessageStatus;
+  status_reason: string | null;
+  provider: string | null;
+  provider_message_id: string | null;
+  attempts: Generated<number>;
+  next_attempt_at: NullableTimestamp;
+  source: string;
+  idempotency_key: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  sent_at: NullableTimestamp;
+  delivered_at: NullableTimestamp;
+  opened_at: NullableTimestamp;
+  clicked_at: NullableTimestamp;
+}
+
+export interface MessageEventsTable {
+  id: Generated<string>;
+  message_id: string;
+  type: 'sent' | 'delivered' | 'failed' | 'open' | 'click' | 'unsubscribe' | 'retry';
+  detail: string | null;
+  at: Timestamp;
+}
+
+export interface SuppressionsTable {
+  id: Generated<string>;
+  channel: TemplateChannel;
+  address: string;
+  reason: string;
+  created_at: Timestamp;
+}
+
 export interface Database {
   app_settings: AppSettingsTable;
   users: UsersTable;
@@ -104,7 +181,15 @@ export interface Database {
   contacts: ContactsTable;
   consent_history: ConsentHistoryTable;
   events: EventsTable;
+  templates: TemplatesTable;
+  template_versions: TemplateVersionsTable;
+  messages: MessagesTable;
+  message_events: MessageEventsTable;
+  suppressions: SuppressionsTable;
 }
+
+export type Template = Selectable<TemplatesTable>;
+export type Message = Selectable<MessagesTable>;
 
 export type User = Selectable<UsersTable>;
 export type Contact = Selectable<ContactsTable>;

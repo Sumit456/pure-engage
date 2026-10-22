@@ -44,6 +44,10 @@ source of truth, and the PureNet mock is generated from it.
 - Opening a contact (`GET /api/contacts/:id`) is PHI access and is audited. Audit `details` record which fields
   changed, never their values.
 - Contacts resolve by `contact_id` → `external_id` → `email`. Email-only matching refuses ambiguous matches.
+- Templates are `care` or `marketing`; the purpose decides which consent is needed. Delivery policy runs at
+  enqueue *and* again before sending (ADR-0004). Never add a code path that sends without `canSend`.
+- Delivery defaults to the sandbox. Tests must never reach a real provider: use the local SMTP server and the fake
+  Twilio in `apps/api/test/delivery.test.ts`.
 
 ## Commands
 - `npm run db`: start the local Postgres (`.pgdata`, port 5433) and create the dev and test databases

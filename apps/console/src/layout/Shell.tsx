@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type Language } from '../i18n/index.ts';
 import { useLogout, useUser } from '../auth/auth.tsx';
 import { Badge, Button } from '../components/ui.tsx';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../api/client.ts';
+import type { DeliveryStatus } from '../api/types.ts';
 import './shell.css';
 
 export const NAV = ['dashboard', 'contacts', 'segments', 'templates', 'campaigns', 'journeys', 'messages', 'reports', 'settings'] as const;
@@ -13,6 +16,7 @@ export function Shell() {
   const logout = useLogout();
   const navigate = useNavigate();
   const lang = (i18n.language === 'ar' ? 'ar' : 'en') satisfies Language;
+  const delivery = useQuery({ queryKey: ['delivery-status'], queryFn: () => api<DeliveryStatus>('/api/delivery/status'), staleTime: 5 * 60_000 });
 
   return (
     <div className="pe-shell">
@@ -46,6 +50,8 @@ export function Shell() {
             </Button>
           </div>
         </header>
+        {delivery.data?.mode === 'sandbox' && <div className="pe-banner" role="status">{t('delivery.sandboxBanner')}</div>}
+        {delivery.data?.mode === 'live' && delivery.data.allowlist && <div className="pe-banner" role="status">{t('delivery.allowlistBanner')}</div>}
         <main className="pe-content">
           <Outlet />
         </main>

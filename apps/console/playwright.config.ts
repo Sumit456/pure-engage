@@ -31,6 +31,7 @@ export default defineConfig({
         PE_LOG_LEVEL: 'warn',
         PE_ADMIN_EMAIL: E2E_ADMIN.email,
         PE_ADMIN_PASSWORD: E2E_ADMIN.password,
+        PE_DISPATCH_INTERVAL_MS: '300',
       },
     },
     {

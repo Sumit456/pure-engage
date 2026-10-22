@@ -39,11 +39,19 @@ npm run dev:console    # console on http://127.0.0.1:5173
 | Auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/password` | Session cookie (httpOnly) + `x-pe-csrf: 1` on writes; 30 min idle / 12 h max |
 | Contacts | `GET/POST /api/contacts`, `GET/PATCH/DELETE /api/contacts/:id`, `GET /api/contacts/:id/events` | viewer reads, marketer writes, admin deletes; every contact view is audited |
 | Admin | `/api/users`, `/api/api-keys`, `GET /api/audit` | admin |
-| Public ingest | `POST /api/v1/track` ([contract](docs/contracts/platform-ingest.openapi.yaml)) | `Authorization: Bearer pe_…` API key |
+| Templates | `GET/POST /api/templates`, `GET/PUT/DELETE /api/templates/:id`, `…/versions`, `…/versions/:v/restore`, `POST /api/templates/preview` | viewer reads, marketer writes |
+| Messages | `GET /api/messages`, `GET /api/messages/:id` (audited), `GET /api/delivery/status` | viewer |
+| Public ingest | `POST /api/v1/track`, `POST /api/v1/messages/send` ([contract](docs/contracts/platform-ingest.openapi.yaml)) | `Authorization: Bearer pe_…` API key |
+| Recipients | `GET /t/o/:token` (open), `GET /t/c/:token` (click), `GET/POST /u/:token` (unsubscribe, RFC 8058) | signed tokens |
+| Twilio | `POST /hooks/twilio/status` | `X-Twilio-Signature` |
 | PureNet | `POST /hooks/purenet` (only when `PURENET_WEBHOOK_SECRET` is set) | HMAC signature (A-011) |
 
 Consent is stored per channel (`email`, `sms`, `push`) and purpose (`care`, `marketing`), with a history row per
 change. Anything not explicitly `granted` counts as denied.
+
+**Delivery is sandboxed by default.** Nothing reaches a real inbox or phone until `PE_DELIVERY_MODE=live` *and*
+SMTP/Twilio credentials are set (see [ADR-0004](docs/adr/0004-messaging-and-delivery.md) and `.env.example`).
+Use `PE_DELIVERY_ALLOWLIST` to limit live sends to test addresses.
 
 Checks (all run in CI):
 ```bash

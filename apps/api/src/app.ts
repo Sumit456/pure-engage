@@ -13,12 +13,17 @@ import { adminRoutes } from './routes/admin.ts';
 import { contactRoutes } from './routes/contacts.ts';
 import { ingestRoutes } from './routes/ingest.ts';
 import { purenetRoutes } from './routes/purenet.ts';
+import { templateRoutes } from './routes/templates.ts';
+import { messageRoutes } from './routes/messages.ts';
+import { publicRoutes } from './routes/public.ts';
 
 export interface AppDeps {
   config: Config;
   db: DB;
   /** Overrides for the PureNet connector's environment (tests point it at a fake). */
   purenetEnv?: NodeJS.ProcessEnv;
+  /** Injectable clock (tests use it for quiet hours and retries). */
+  clock?: () => Date;
 }
 
 declare module 'fastify' {
@@ -39,11 +44,18 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     bodyLimit: 1024 * 1024,
   });
   app.decorate('deps', deps);
-  app.decorate('services', createServices(deps.db, config));
+  app.decorate('services', createServices(deps.db, config, {
+    ...(deps.clock ? { clock: deps.clock } : {}),
+    log: (level, msg, fields) => app.log[level](fields ?? {}, msg),
+  }));
 
   await app.register(helmet);
   await app.register(cookie);
   await app.register(rateLimit, { global: false });
+  // Twilio callbacks and the unsubscribe form post urlencoded bodies.
+  app.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string', bodyLimit: 64 * 1024 }, (_req, body, done) => {
+    done(null, Object.fromEntries(new URLSearchParams(body as string)));
+  });
 
   app.setErrorHandler((err: FastifyError | Error, req, reply) => {
     if (err instanceof HttpError) return reply.code(err.statusCode).send({ error: err.message, details: err.details });
@@ -70,6 +82,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(adminRoutes);
   await app.register(contactRoutes);
   await app.register(ingestRoutes);
+  await app.register(templateRoutes);
+  await app.register(messageRoutes);
+  await app.register(publicRoutes);
   if (config.PURENET_WEBHOOK_SECRET) {
     await app.register(purenetRoutes, { webhookSecret: config.PURENET_WEBHOOK_SECRET, env: deps.purenetEnv });
   }
