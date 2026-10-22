@@ -1,0 +1,89 @@
+/* Component styles. Colours, fonts and radii come from tokens.css only. */
+
+.pe-center { display: grid; place-items: center; min-height: 50vh; }
+.pe-stack { display: flex; flex-direction: column; gap: calc(var(--pe-space) * 2); }
+.pe-row { display: flex; align-items: center; gap: var(--pe-space); flex-wrap: wrap; }
+.pe-spacer { flex: 1; }
+.pe-page-header { display: flex; align-items: center; gap: calc(var(--pe-space) * 2); flex-wrap: wrap; margin-block-end: calc(var(--pe-space) * 2); }
+.pe-page-header h1 { margin: 0; }
+.pe-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: calc(var(--pe-space) * 2); }
+
+/* Buttons */
+.pe-button:disabled { opacity: 0.6; cursor: not-allowed; }
+.pe-button--secondary:hover:not(:disabled) { background: var(--pe-surface-muted); }
+.pe-button--primary:hover:not(:disabled) { background: var(--pe-brand-500); }
+.pe-button--danger { background: var(--pe-surface); border-color: var(--pe-danger); color: var(--pe-danger); }
+.pe-button--danger:hover:not(:disabled) { background: var(--pe-danger); color: var(--pe-on-brand); }
+.pe-button--ghost { border-color: transparent; background: transparent; }
+.pe-button--ghost:hover:not(:disabled) { background: var(--pe-surface-muted); }
+
+/* Fields */
+.pe-field { display: flex; flex-direction: column; gap: 4px; }
+.pe-field label { font-weight: 500; font-size: 0.9rem; }
+.pe-field input, .pe-field select, .pe-search {
+  font: inherit;
+  padding: calc(var(--pe-space) * 1) calc(var(--pe-space) * 1.5);
+  border-radius: var(--pe-radius-sm);
+  border: 1px solid var(--pe-border);
+  background: var(--pe-surface);
+  color: var(--pe-text);
+  min-width: 0;
+}
+.pe-field input:focus-visible, .pe-field select:focus-visible, .pe-search:focus-visible { outline: 2px solid var(--pe-brand-500); outline-offset: 1px; }
+.pe-field input[aria-invalid='true'] { border-color: var(--pe-danger); }
+.pe-field__error { color: var(--pe-danger); }
+.pe-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: calc(var(--pe-space) * 2); }
+
+/* Badges */
+.pe-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 500; background: var(--pe-surface-muted); color: var(--pe-text-muted); white-space: nowrap; }
+.pe-badge--success { background: color-mix(in srgb, var(--pe-success) 14%, transparent); color: var(--pe-success); }
+.pe-badge--warning { background: color-mix(in srgb, var(--pe-warning) 16%, transparent); color: var(--pe-warning); }
+.pe-badge--danger { background: color-mix(in srgb, var(--pe-danger) 14%, transparent); color: var(--pe-danger); }
+.pe-badge--brand { background: var(--pe-brand-100); color: var(--pe-brand-600); }
+
+/* Alerts, empty states, spinner */
+.pe-alert { padding: calc(var(--pe-space) * 1.5) calc(var(--pe-space) * 2); border-radius: var(--pe-radius-sm); border: 1px solid; }
+.pe-alert--danger { border-color: var(--pe-danger); color: var(--pe-danger); background: color-mix(in srgb, var(--pe-danger) 8%, var(--pe-surface)); }
+.pe-empty { display: flex; flex-direction: column; align-items: center; gap: var(--pe-space); padding: calc(var(--pe-space) * 6) calc(var(--pe-space) * 2); text-align: center; }
+.pe-spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--pe-border); border-block-start-color: var(--pe-brand-600); border-radius: 50%; animation: pe-spin 0.8s linear infinite; }
+.pe-spinner--small { width: 14px; height: 14px; border-width: 2px; }
+@keyframes pe-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pe-spinner { animation-duration: 3s; } }
+
+/* Tables */
+.pe-table-wrap { overflow-x: auto; }
+.pe-table { width: 100%; border-collapse: collapse; }
+.pe-table th, .pe-table td { text-align: start; padding: calc(var(--pe-space) * 1.25) calc(var(--pe-space) * 1.5); border-block-end: 1px solid var(--pe-border); vertical-align: top; }
+.pe-table th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--pe-text-muted); font-weight: 600; }
+.pe-table tbody tr:hover { background: var(--pe-surface-muted); }
+.pe-table a { font-weight: 500; text-decoration: none; }
+.pe-table a:hover { text-decoration: underline; }
+
+/* Definition lists */
+.pe-dl { display: grid; grid-template-columns: max-content 1fr; gap: var(--pe-space) calc(var(--pe-space) * 3); margin: 0; }
+.pe-dl dt { color: var(--pe-text-muted); }
+.pe-dl dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Timeline */
+.pe-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: calc(var(--pe-space) * 1.5); }
+.pe-timeline li { border-inline-start: 2px solid var(--pe-brand-100); padding-inline-start: calc(var(--pe-space) * 1.5); }
+.pe-timeline code { font-size: 0.8rem; color: var(--pe-text-muted); overflow-wrap: anywhere; }
+
+/* Dialog */
+.pe-dialog { border: 1px solid var(--pe-border); border-radius: var(--pe-radius); padding: 0; width: min(640px, calc(100vw - 32px)); background: var(--pe-surface); color: var(--pe-text); box-shadow: var(--pe-shadow); }
+.pe-dialog::backdrop { background: rgb(10 20 25 / 45%); }
+.pe-dialog__body { padding: calc(var(--pe-space) * 3); display: flex; flex-direction: column; gap: calc(var(--pe-space) * 2); }
+.pe-dialog__footer { display: flex; justify-content: flex-end; gap: var(--pe-space); }
+
+/* Login */
+.pe-login { min-height: 100%; display: grid; place-items: center; padding: calc(var(--pe-space) * 2); }
+.pe-login__card { width: min(400px, 100%); display: flex; flex-direction: column; gap: calc(var(--pe-space) * 2); }
+.pe-login__brand { display: flex; align-items: center; gap: var(--pe-space); font-weight: 600; font-size: 1.2rem; }
+
+/* Consent matrix */
+.pe-consent { border-collapse: collapse; }
+.pe-consent th, .pe-consent td { padding: 6px 12px; text-align: start; border-block-end: 1px solid var(--pe-border); }
+.pe-consent th { font-weight: 500; color: var(--pe-text-muted); }
+
+/* Bidi isolation for LTR values (phones, emails, IDs) inside RTL text. */
+.pe-ltr { unicode-bidi: isolate; direction: ltr; }

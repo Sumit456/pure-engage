@@ -31,6 +31,12 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run migrate
+      - name: Console end-to-end (Playwright, real API + Postgres)
+        env:
+          PE_E2E_DATABASE_BASE: postgres://pure_engage@localhost:5432/
+        run: |
+          npx -w @pure-engage/console playwright install --with-deps chromium
+          npm run e2e:console
   contracts:
     runs-on: ubuntu-latest
     steps:
@@ -43,7 +49,7 @@ jobs:
       - run: npm run lint:contracts
       - run: npm run check:evidence
       - name: End-to-end against the PureNet mocks
-        run: npm run e2e
+        run: npm run e2e:purenet
       - name: Smoke-test the PureNet mock
         run: |
           npm run mock:purenet > prism.log 2>&1 &

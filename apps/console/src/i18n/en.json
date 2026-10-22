@@ -1,6 +1,10 @@
 {
-  "app": { "name": "Pure Engage", "tagline": "Member engagement for PureHealth" },
+  "app": {
+    "name": "Pure Engage",
+    "tagline": "Member engagement for PureHealth"
+  },
   "nav": {
+    "main": "Main",
     "dashboard": "Dashboard",
     "contacts": "Contacts",
     "segments": "Segments",
@@ -11,6 +15,87 @@
     "reports": "Reports",
     "settings": "Settings"
   },
-  "common": { "language": "Language", "comingSoon": "This area is being built in an upcoming milestone." },
-  "dashboard": { "title": "Dashboard", "welcome": "Welcome to Pure Engage. Contacts, journeys and messaging arrive in the next milestones." }
+  "common": {
+    "language": "Language",
+    "comingSoon": "This area is being built in an upcoming milestone.",
+    "loading": "Loading",
+    "loadMore": "Load more",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "source": "Source"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again."
+  },
+  "roles": {
+    "viewer": "Viewer",
+    "marketer": "Marketer",
+    "admin": "Admin"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "invalidCredentials": "Incorrect email or password.",
+    "tooManyAttempts": "Too many attempts. Please wait a few minutes and try again."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "hello": "Hello, {{name}}",
+    "welcome": "Contacts and consent are live. Templates, campaigns and journeys arrive in the next milestones.",
+    "goContacts": "Go to contacts"
+  },
+  "contacts": {
+    "new": "New contact",
+    "edit": "Edit contact",
+    "search": "Search contacts",
+    "searchPlaceholder": "Search name, ID, email or phone",
+    "empty": "No contacts yet",
+    "emptyHint": "Contacts arrive from PureNet and the ingest API, or add one here.",
+    "noMatches": "No contacts match your search",
+    "notFound": "Contact not found",
+    "backToList": "← All contacts",
+    "profile": "Profile",
+    "attributes": "Attributes",
+    "noAttributes": "No custom attributes.",
+    "recentActivity": "Recent activity",
+    "noActivity": "No activity yet.",
+    "deleteTitle": "Delete contact?",
+    "deleteWarning": "This permanently deletes {{name}} with their events and consent history. This can't be undone.",
+    "field": {
+      "name": "Name",
+      "external_id": "Member ID",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "email": "Email",
+      "phone": "Mobile",
+      "preferred_language": "Preferred language",
+      "timezone": "Time zone",
+      "created_at": "Created",
+      "updated_at": "Updated"
+    }
+  },
+  "consent": {
+    "title": "Consent",
+    "history": "Consent history",
+    "noHistory": "No consent changes recorded.",
+    "careConsent": "Care consent",
+    "channel": "Channel",
+    "explainer": "Messages are only sent where consent is explicitly granted. Unknown counts as no.",
+    "channel_email": "Email",
+    "channel_sms": "SMS",
+    "channel_push": "Push",
+    "purpose": {
+      "care": "Care",
+      "marketing": "Marketing"
+    },
+    "status": {
+      "granted": "Granted",
+      "denied": "Denied",
+      "unknown": "Unknown"
+    }
+  }
 }

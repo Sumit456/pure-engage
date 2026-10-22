@@ -51,7 +51,8 @@ npm test               # connector + API (against Postgres) + console
 npm run typecheck
 npm run build
 npm run lint:contracts && npm run check:evidence
-npm run e2e            # PureNet flow against the Prism mocks
+npm run e2e:console    # Playwright: real API + Postgres + console
+npm run e2e:purenet    # PureNet flow against the Prism mocks
 npm run scan:secrets   # gitleaks
 ```
 

@@ -52,7 +52,8 @@ source of truth, and the PureNet mock is generated from it.
 - `npm run typecheck`, `npm run build`
 - `npm run migrate`: apply API migrations to `PE_DATABASE_URL`
 - `PE_NEW_USER_PASSWORD=… npm run create-user -- <email> [admin|marketer|viewer] [name]`: create a console user
-- `npm run e2e`: PureNet end-to-end run against both Prism mocks
+- `npm run e2e:console`: Playwright against the real API, Postgres (fresh `pure_engage_e2e`) and the console
+- `npm run e2e:purenet`: PureNet end-to-end run against both Prism mocks
 - `npm run lint:contracts`: lint the OpenAPI and AsyncAPI specs
 - `npm run check:evidence`: check that every contract element is labelled
 - `npm run mocks`: run the PureNet API mock (:4010) and OAuth mock (:4011)
