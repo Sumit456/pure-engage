@@ -78,6 +78,38 @@ export interface IntegrationRequestsTable {
   duration_ms: number;
   items: number | null;
   error: string | null;
+  oauth_grant_id: string | null;
+}
+
+export interface OAuthClientsTable {
+  id: string;
+  name: string;
+  redirect_uris: ColumnType<string[], string[] | string, string[] | string>;
+  created_at: Timestamp;
+}
+
+export interface OAuthCodesTable {
+  code_hash: string;
+  client_id: string;
+  user_id: string;
+  redirect_uri: string;
+  code_challenge: string;
+  scopes: ColumnType<ApiScope[], ApiScope[] | string, ApiScope[] | string>;
+  expires_at: Timestamp;
+  used_at: NullableTimestamp;
+}
+
+export interface OAuthGrantsTable {
+  id: Generated<string>;
+  client_id: string;
+  user_id: string | null;
+  scopes: ColumnType<ApiScope[], ApiScope[] | string, ApiScope[] | string>;
+  access_hash: string;
+  access_expires_at: Timestamp;
+  refresh_hash: string;
+  created_at: Timestamp;
+  last_used_at: NullableTimestamp;
+  revoked_at: NullableTimestamp;
 }
 
 export interface AuditLogTable {
@@ -344,6 +376,9 @@ export interface Database {
   webhook_deliveries: WebhookDeliveriesTable;
   integrations: IntegrationsTable;
   integration_requests: IntegrationRequestsTable;
+  oauth_clients: OAuthClientsTable;
+  oauth_codes: OAuthCodesTable;
+  oauth_grants: OAuthGrantsTable;
 }
 
 export type Template = Selectable<TemplatesTable>;

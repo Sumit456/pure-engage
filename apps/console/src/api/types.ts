@@ -147,14 +147,17 @@ export interface InboundWebhook {
   created_at: string; updated_at: string; last_seen_at: string | null;
 }
 export interface IntegrationRequest {
-  id: string; at: string; api_key_id: string | null; integration_id: string | null; api_key_name: string | null; integration_name: string | null;
+  id: string; at: string; api_key_id: string | null; integration_id: string | null; oauth_grant_id: string | null;
+  api_key_name: string | null; integration_name: string | null; oauth_client_name: string | null;
   method: string; route: string; status: number; duration_ms: number; items: number | null; error: string | null;
 }
 export interface IntegrationsOverview {
   api_keys: number; inbound_webhooks: { total: number; enabled: number }; outbound_webhooks: { total: number; enabled: number };
-  requests_24h: number; errors_24h: number; hourly: number[];
+  requests_24h: number; errors_24h: number; hourly: number[]; ai_connections: number; mcp_url: string;
   by_source: { api_key_id: string | null; integration_id: string | null; requests: number; errors: number; last_at: string }[];
 }
+export interface OAuthGrant { id: string; client_name: string; scopes: ApiScope[]; approved_by: string | null; created_at: string; last_used_at: string | null; revoked_at: string | null }
+export interface OAuthRequest { client: { id: string; name: string; redirect_host: string }; requested_scopes: ApiScope[]; available_scopes: ApiScope[] }
 export interface TrackResultView { attributes_processed: number; events_processed: number; duplicates: number; errors: { type: string; index: number; error: string }[]; skipped?: string[] }
 export interface AdminUser extends User { active: boolean; created_at: string; last_login_at: string | null }
 export interface AuditEntry { id: string; at: string; actor_type: string; actor_id: string | null; action: string; entity_type: string | null; entity_id: string | null; details: Record<string, unknown> }

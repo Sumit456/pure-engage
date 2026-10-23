@@ -1,4 +1,4 @@
-import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import type { ApiScope } from '@pure-engage/shared';
 import type { Role } from '../db/schema.ts';
 import { forbidden, unauthorized, HttpError } from '../errors.ts';
@@ -13,11 +13,14 @@ export interface SessionUser { id: string; email: string; name: string; role: Ro
 declare module 'fastify' {
   interface FastifyRequest {
     user?: SessionUser;
-    apiKey?: { id: string; name: string; scopes: ApiScope[] };
+    /** The caller of the public API or MCP: an API key, or an AI assistant's OAuth grant. */
+    apiKey?: { id: string; name: string; scopes: ApiScope[]; kind: 'api_key' | 'oauth' };
     /** Set on inbound webhook requests. */
     integration?: { id: string; name: string };
     /** Items handled by an integration request, for the request log. */
     logItems?: number;
+    /** Overrides the route shown in the request log (e.g. the MCP method and tool name). */
+    logRoute?: string;
   }
 }
 
@@ -47,13 +50,24 @@ export function requireUser(minimum: Role = 'viewer'): preHandlerHookHandler {
 /** Checks the bearer API key and that it carries every listed scope. */
 export function requireApiKey(...scopes: ApiScope[]): preHandlerHookHandler {
   return async function (req) {
-    const header = req.headers.authorization ?? '';
-    const key = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-    const apiKey = key ? await this.services.auth.verifyApiKey(key) : null;
+    const apiKey = await resolveBearer(this, req);
     if (!apiKey) throw new HttpError(401, 'Invalid or missing API key');
     req.apiKey = apiKey;
     assertScope(req, ...scopes);
   };
+}
+
+/** API keys (`pe_…`) and OAuth access tokens (`pe_at_…`) are both bearer credentials with scopes. */
+export async function resolveBearer(app: FastifyInstance, req: FastifyRequest): Promise<FastifyRequest['apiKey'] | null> {
+  const header = req.headers.authorization ?? '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!token) return null;
+  if (token.startsWith('pe_at_')) {
+    const grant = await app.services.oauth.verifyAccessToken(token);
+    return grant && { ...grant, kind: 'oauth' };
+  }
+  const key = await app.services.auth.verifyApiKey(token);
+  return key && { ...key, kind: 'api_key' };
 }
 
 export const hasScope = (req: FastifyRequest, scope: ApiScope) => !!req.apiKey?.scopes.includes(scope);
@@ -65,6 +79,7 @@ export function assertScope(req: FastifyRequest, ...scopes: ApiScope[]): void {
 
 export function actorOf(req: FastifyRequest): Actor {
   if (req.user) return { type: 'user', id: req.user.id, ip: req.ip };
+  if (req.apiKey?.kind === 'oauth') return { type: 'integration', id: `oauth:${req.apiKey.id}` };
   if (req.apiKey) return { type: 'api_key', id: req.apiKey.id, ip: req.ip };
   if (req.integration) return { type: 'integration', id: req.integration.id };
   return { type: 'system' };

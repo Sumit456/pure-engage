@@ -11,6 +11,8 @@ const schema = z.object({
   PE_LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   /** Public base URL of the API, used in tracking, unsubscribe and provider callback links. */
   PE_PUBLIC_URL: z.string().url().default('http://127.0.0.1:4200'),
+  /** Where the console is served, for links back to it (OAuth consent, links in AI tool results). Defaults to PE_PUBLIC_URL. */
+  PE_CONSOLE_URL: z.string().url().optional(),
   PE_BRAND_NAME: z.string().default('PureHealth'),
 
   // Sessions: idle timeout and absolute lifetime.
@@ -79,7 +81,7 @@ const schema = z.object({
   PURENET_WEBHOOK_SECRET: z.string().min(16).optional(),
 });
 
-export type Config = z.infer<typeof schema> & { trackingSecret: string; secretKey: Buffer };
+export type Config = z.infer<typeof schema> & { trackingSecret: string; secretKey: Buffer; consoleUrl: string };
 
 const DEV_TRACKING_SECRET = 'dev-only-tracking-secret-do-not-use-in-production';
 const DEV_SECRET_KEY_SEED = 'dev-only-secret-key-do-not-use-in-production';
@@ -96,7 +98,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (c.NODE_ENV === 'production' && !c.PE_TRACKING_SECRET) throw new Error('Invalid configuration: PE_TRACKING_SECRET is required in production');
   if (c.NODE_ENV === 'production' && !c.PE_SECRET_KEY) throw new Error('Invalid configuration: PE_SECRET_KEY is required in production');
   if (c.NODE_ENV === 'production' && c.PE_WEBHOOKS_ALLOW_PRIVATE) throw new Error('Invalid configuration: PE_WEBHOOKS_ALLOW_PRIVATE cannot be used in production');
-  return { ...c, trackingSecret: c.PE_TRACKING_SECRET ?? DEV_TRACKING_SECRET, secretKey: deriveSecretKey(c.PE_SECRET_KEY ?? DEV_SECRET_KEY_SEED) };
+  return {
+    ...c, trackingSecret: c.PE_TRACKING_SECRET ?? DEV_TRACKING_SECRET, secretKey: deriveSecretKey(c.PE_SECRET_KEY ?? DEV_SECRET_KEY_SEED),
+    consoleUrl: (c.PE_CONSOLE_URL ?? c.PE_PUBLIC_URL).replace(/\/$/, ''),
+  };
 }
 
 /** A 32-byte base64 value is used as the AES key as is; any other (long, random) string is hashed to 32 bytes. */

@@ -21,6 +21,9 @@ export const SCOPE_PRESETS: Record<'ingest' | 'messaging' | 'ai_read' | 'ai_draf
   full: [...API_SCOPES],
 };
 
+/** What an AI assistant connected over OAuth (MCP) may be granted: reads and drafts, never sending. */
+export const AI_SCOPES: ApiScope[] = ['contacts:read', 'contacts:read_pii', 'segments:read', 'campaigns:read', 'reports:read', 'drafts:write'];
+
 // ---------- inbound field mapping ----------
 
 export const MAPPABLE_CONTACT_FIELDS = ['external_id', 'email', 'phone', 'first_name', 'last_name', 'preferred_language', 'timezone'] as const;

@@ -24,11 +24,14 @@ import { InboundEditorPage, InboundListPage } from './pages/integrations/Inbound
 import { OutboundPage } from './pages/integrations/OutboundPage.tsx';
 import { ApiReferencePage } from './pages/integrations/ApiReferencePage.tsx';
 import { NoCodePage } from './pages/integrations/NoCodePage.tsx';
+import { AiAssistantsPage } from './pages/integrations/AiAssistantsPage.tsx';
+import { ConnectAuthorizePage } from './pages/integrations/ConnectAuthorizePage.tsx';
 
 const BUILT = new Set(['dashboard', 'contacts', 'templates', 'messages', 'segments', 'campaigns', 'journeys', 'reports', 'settings', 'integrations']);
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <Login /> },
+  { path: '/connect/authorize', element: <RequireAuth><ConnectAuthorizePage /></RequireAuth> },
   {
     path: '/',
     element: <RequireAuth><Shell /></RequireAuth>,
@@ -55,6 +58,7 @@ export const routes: RouteObject[] = [
       { path: 'integrations/outbound', element: <OutboundPage /> },
       { path: 'integrations/reference', element: <ApiReferencePage /> },
       { path: 'integrations/no-code', element: <NoCodePage /> },
+      { path: 'integrations/ai', element: <AiAssistantsPage /> },
       { path: 'messages/:id', element: <MessageDetailPage /> },
       ...NAV.filter((k) => !BUILT.has(k)).map((k) => ({ path: k, element: <ComingSoon section={k} /> })),
     ],

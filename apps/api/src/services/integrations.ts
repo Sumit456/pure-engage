@@ -158,21 +158,24 @@ export function createIntegrationsService({ db, config, ingest, clock }: { db: K
 
     // ---------- request log (metadata only: never payloads, contact values or keys) ----------
 
-    async log(entry: { apiKeyId?: string | null; integrationId?: string | null; method: string; route: string; status: number; durationMs: number; items?: number | null; error?: string | null }) {
+    async log(entry: { apiKeyId?: string | null; oauthGrantId?: string | null; integrationId?: string | null; method: string; route: string; status: number; durationMs: number; items?: number | null; error?: string | null }) {
       await db.insertInto('integration_requests').values({
-        at: clock(), api_key_id: entry.apiKeyId ?? null, integration_id: entry.integrationId ?? null, method: entry.method,
+        at: clock(), api_key_id: entry.apiKeyId ?? null, oauth_grant_id: entry.oauthGrantId ?? null, integration_id: entry.integrationId ?? null, method: entry.method,
         route: entry.route.slice(0, 200), status: entry.status, duration_ms: Math.round(entry.durationMs), items: entry.items ?? null, error: entry.error?.slice(0, 300) ?? null,
       }).execute();
     },
 
-    async requests(filter: { apiKeyId?: string | undefined; integrationId?: string | undefined; limit?: number }) {
+    async requests(filter: { apiKeyId?: string | undefined; integrationId?: string | undefined; oauthGrantId?: string | undefined; limit?: number }) {
       let q = db.selectFrom('integration_requests')
         .leftJoin('api_keys', 'api_keys.id', 'integration_requests.api_key_id')
         .leftJoin('integrations', 'integrations.id', 'integration_requests.integration_id')
-        .selectAll('integration_requests').select(['api_keys.name as api_key_name', 'integrations.name as integration_name'])
+        .leftJoin('oauth_grants', 'oauth_grants.id', 'integration_requests.oauth_grant_id')
+        .leftJoin('oauth_clients', 'oauth_clients.id', 'oauth_grants.client_id')
+        .selectAll('integration_requests').select(['api_keys.name as api_key_name', 'integrations.name as integration_name', 'oauth_clients.name as oauth_client_name'])
         .orderBy('integration_requests.at', 'desc').orderBy('integration_requests.id', 'desc').limit(Math.min(Math.max(filter.limit ?? 50, 1), 200));
       if (filter.apiKeyId) q = q.where('integration_requests.api_key_id', '=', filter.apiKeyId);
       if (filter.integrationId) q = q.where('integration_requests.integration_id', '=', filter.integrationId);
+      if (filter.oauthGrantId) q = q.where('integration_requests.oauth_grant_id', '=', filter.oauthGrantId);
       return q.execute();
     },
 

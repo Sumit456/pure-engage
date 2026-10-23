@@ -33,6 +33,8 @@ export default defineConfig({
         PE_ADMIN_PASSWORD: E2E_ADMIN.password,
         PE_DISPATCH_INTERVAL_MS: '300',
         PE_WEBHOOKS_ALLOW_PRIVATE: 'true',
+        PE_PUBLIC_URL: `http://127.0.0.1:${API_PORT}`,
+        PE_CONSOLE_URL: `http://127.0.0.1:${WEB_PORT}`,
         // Every spec signs in from 127.0.0.1; the production default (10 per 15 min) would throttle the suite.
         PE_LOGIN_RATE_LIMIT: '200',
       },

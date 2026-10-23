@@ -8,6 +8,7 @@ const idParam = z.object({ id: z.string().uuid() });
 const requestsQuery = z.object({
   api_key_id: z.string().uuid().optional(),
   integration_id: z.string().uuid().optional(),
+  oauth_grant_id: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 
@@ -15,10 +16,13 @@ export const integrationRoutes: FastifyPluginAsync = async (app) => {
   const { integrations } = app.services;
   const admin = { preHandler: requireUser('admin') };
 
-  app.get('/api/integrations/overview', admin, async () => integrations.overview());
+  app.get('/api/integrations/overview', admin, async () => ({
+    ...(await integrations.overview()), ai_connections: await app.services.oauth.countActive(),
+    mcp_url: `${app.deps.config.PE_PUBLIC_URL.replace(/\/$/, '')}/mcp`,
+  }));
   app.get('/api/integrations/requests', admin, async (req) => {
     const q = requestsQuery.parse(req.query);
-    return { data: await integrations.requests({ apiKeyId: q.api_key_id, integrationId: q.integration_id, limit: q.limit }) };
+    return { data: await integrations.requests({ apiKeyId: q.api_key_id, integrationId: q.integration_id, oauthGrantId: q.oauth_grant_id, limit: q.limit }) };
   });
   app.get('/api/integrations', admin, async () => ({ data: await integrations.list() }));
   app.post('/api/integrations', admin, async (req, reply) => reply.code(201).send(await integrations.create(req.body, actorOf(req))));

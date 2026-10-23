@@ -74,12 +74,13 @@ export function BackLink({ to, children }: { to: string; children: ReactNode }) 
 const statusTone = (s: number) => (s >= 500 ? 'danger' : s >= 400 ? 'warning' : 'success');
 
 /** Recent calls (metadata only) for one key, one source, or everything. */
-export function RequestLog({ apiKeyId, integrationId, limit = 25, refetch }: { apiKeyId?: string; integrationId?: string; limit?: number; refetch?: number }) {
+export function RequestLog({ apiKeyId, integrationId, oauthGrantId, limit = 25, refetch }: { apiKeyId?: string; integrationId?: string; oauthGrantId?: string; limit?: number; refetch?: number }) {
   const { t } = useTranslation();
   const formatDate = useFormatDate();
-  const qs = new URLSearchParams({ limit: String(limit), ...(apiKeyId ? { api_key_id: apiKeyId } : {}), ...(integrationId ? { integration_id: integrationId } : {}) });
+  const scoped = !!(apiKeyId || integrationId || oauthGrantId);
+  const qs = new URLSearchParams({ limit: String(limit), ...(apiKeyId ? { api_key_id: apiKeyId } : {}), ...(integrationId ? { integration_id: integrationId } : {}), ...(oauthGrantId ? { oauth_grant_id: oauthGrantId } : {}) });
   const log = useQuery({
-    queryKey: ['integration-requests', apiKeyId, integrationId, limit],
+    queryKey: ['integration-requests', apiKeyId, integrationId, oauthGrantId, limit],
     queryFn: () => api<{ data: IntegrationRequest[] }>(`/api/integrations/requests?${qs}`),
     refetchInterval: refetch ?? 15_000,
   });
@@ -91,7 +92,7 @@ export function RequestLog({ apiKeyId, integrationId, limit = 25, refetch }: { a
         <thead>
           <tr>
             <th>{t('settings.when')}</th>
-            {!apiKeyId && !integrationId && <th>{t('integrations.log.source')}</th>}
+            {!scoped && <th>{t('integrations.log.source')}</th>}
             <th>{t('integrations.log.request')}</th>
             <th>{t('messages.statusLabel')}</th>
             <th>{t('integrations.log.items')}</th>
@@ -102,7 +103,7 @@ export function RequestLog({ apiKeyId, integrationId, limit = 25, refetch }: { a
           {log.data.data.map((r) => (
             <tr key={r.id}>
               <td>{formatDate(r.at)}</td>
-              {!apiKeyId && !integrationId && <td>{r.api_key_name ?? r.integration_name ?? '—'}</td>}
+              {!scoped && <td>{r.api_key_name ?? r.integration_name ?? r.oauth_client_name ?? '—'}</td>}
               <td><code><Ltr>{r.method} {r.route}</Ltr></code>{r.error && <div><small className="pe-muted">{r.error}</small></div>}</td>
               <td><Pill tone={statusTone(r.status)} dot>{r.status}</Pill></td>
               <td>{r.items ?? '—'}</td>

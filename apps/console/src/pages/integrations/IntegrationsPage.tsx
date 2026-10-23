@@ -24,7 +24,7 @@ export function IntegrationsPage() {
     { id: 'api', icon: KeyRound, to: '/integrations/api', tone: 'primary', adminOnly: true, status: (x) => (x ? count(x.api_keys, 'integrations.status.keys') : null) },
     { id: 'inbound', icon: ArrowDownToLine, to: '/integrations/inbound', tone: 'info', adminOnly: true, status: (x) => (x ? count(x.inbound_webhooks.enabled, 'integrations.status.sources') : null) },
     { id: 'outbound', icon: ArrowUpFromLine, to: '/integrations/outbound', tone: 'sms', adminOnly: true, status: (x) => (x ? count(x.outbound_webhooks.enabled, 'integrations.status.endpoints') : null) },
-    { id: 'ai', icon: Bot, to: null, tone: 'primary', adminOnly: true, status: () => ({ tone: 'info', label: t('integrations.status.soon') }) },
+    { id: 'ai', icon: Bot, to: '/integrations/ai', tone: 'primary', adminOnly: true, status: (x) => (x?.ai_connections ? { tone: 'success', label: t('integrations.status.connected', { count: x.ai_connections }) } : { tone: 'info', label: t('integrations.status.new') }) },
     { id: 'nocode', icon: Zap, to: '/integrations/no-code', tone: 'warning', status: () => null },
     { id: 'import', icon: FileSpreadsheet, to: '/contacts/import', tone: 'success', status: () => null },
     { id: 'reference', icon: BookOpen, to: '/integrations/reference', tone: 'muted', status: () => null },

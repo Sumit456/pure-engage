@@ -15,8 +15,9 @@ and email/SMS delivery, and integrates with PureNet.
 | `apps/console` | React + Vite console. English and Arabic (RTL). Theme in `src/theme/tokens.css` |
 | `packages/shared` | zod schemas and types shared by the API and console |
 | `packages/purenet-connector` | Provisional PureNet connector: OAuth, REST client, signed webhook receiver, mapping |
+| `packages/sdk` | `@pure-engage/sdk`: dependency-free JS client for the public API and webhook signatures |
 | `docs/contracts/` | OpenAPI/AsyncAPI contracts (every element labelled CONFIRMED or INFERRED) + `ASSUMPTIONS.md` |
-| `docs/adr/` | Decisions: 0001 repo location, 0002 contract-first mock, 0003 stack and layout, 0004 messaging and delivery, 0005 journeys, 0006 reporting, webhooks and operations |
+| `docs/adr/` | Decisions: 0001 repo location, 0002 contract-first mock, 0003 stack and layout, 0004 messaging and delivery, 0005 journeys, 0006 reporting, webhooks and operations, 0007 integrations and AI access (MCP) |
 | `docs/audit/orbit-audit.md` | Audit of `Sumit456/Orbit` (prior art only; no code reused) |
 | `mock/purenet/` | Prism mock of PureNet, smoke test, examples |
 | `scripts/` | `dev-db.sh` (local Postgres), `check-evidence.mjs`, `e2e-purenet.sh` |
@@ -44,12 +45,20 @@ npm run dev:console    # console on http://127.0.0.1:5173
 | Campaigns | `GET/POST /api/campaigns`, `GET/PUT /api/campaigns/:id`, `…/estimate`, `…/schedule`, `…/cancel`, `…/test` | viewer reads, marketer writes and sends |
 | Journeys | `GET/POST /api/journeys`, `GET/PUT/DELETE /api/journeys/:id`, `…/activate`, `…/pause`, `…/enrollments`, `POST /api/journeys/simulate`, `POST /api/journeys/starters/appointment-reminder` | viewer reads, marketer writes |
 | Messages | `GET /api/messages`, `GET /api/messages/:id` (audited), `GET /api/delivery/status` | viewer |
-| Public ingest | `POST /api/v1/track`, `POST /api/v1/messages/send` ([contract](docs/contracts/platform-ingest.openapi.yaml)) | `Authorization: Bearer pe_…` API key |
+| Public API v1 | `POST /track`, `POST /messages/send`, `GET /contacts/:id`, `POST /contacts/lookup`, `POST /consent`, `POST /journeys/:id/trigger`, `GET /messages/:id`, `GET /segments`, `GET /campaigns[/:id]`, `GET /reports/overview`, `GET /openapi.json` (all under `/api/v1`, [contract](docs/contracts/platform-ingest.openapi.yaml)) | `Authorization: Bearer pe_…` API key with the scopes each endpoint lists |
+| Integrations | `GET /api/integrations/overview`, `…/requests`, `GET/POST /api/integrations`, `GET/PATCH/DELETE /api/integrations/:id`, `…/test`, `…/rotate-secret` | admin |
+| Inbound webhooks | `POST /hooks/in/:id` (any app posting JSON, mapped to `/track`) | token or HMAC `X-PE-Signature` |
+| AI assistants (MCP) | `POST /mcp`; OAuth: `/.well-known/oauth-*`, `POST /oauth/register`, `GET /oauth/authorize`, `POST /oauth/token`; console `/api/oauth/*` | OAuth 2.1 + PKCE approved by an admin, or a scoped API key ([ADR-0007](docs/adr/0007-integrations-and-ai-access.md)) |
 | Reports | `GET /api/reports/overview`, `…/messages`, `…/campaigns`, `…/journeys`, `…/messages.csv`, `…/campaigns.csv` | viewer (aggregates only) |
 | Webhooks | `GET/POST /api/webhooks`, `PATCH/DELETE /api/webhooks/:id`, `…/test`, `…/rotate-secret`, `…/deliveries`, `POST /api/webhook-deliveries/:id/retry` | admin |
 | Recipients | `GET /t/o/:token` (open), `GET /t/c/:token` (click), `GET/POST /u/:token` (unsubscribe, RFC 8058) | signed tokens |
 | Twilio | `POST /hooks/twilio/status` (receipts), `POST /hooks/twilio/inbound` (STOP opt-out) | `X-Twilio-Signature` |
 | PureNet | `POST /hooks/purenet` (only when `PURENET_WEBHOOK_SECRET` is set) | HMAC signature (A-011) |
+
+**Integrations** (console → Integrations): scoped API keys, inbound and outbound webhooks, Zapier/Make/n8n recipes,
+an API reference generated from the contract, and AI assistants. To connect Claude, add a custom connector with the
+URL `https://<your host>/mcp` and approve it as an admin. Assistants can read results and create drafts, but can
+never send, schedule or activate anything.
 
 Consent is stored per channel (`email`, `sms`, `push`) and purpose (`care`, `marketing`), with a history row per
 change. Anything not explicitly `granted` counts as denied.

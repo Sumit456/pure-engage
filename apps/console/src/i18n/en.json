@@ -801,7 +801,8 @@
       "endpoints": "{{count}} active",
       "new": "New",
       "soon": "Coming next",
-      "awaiting": "Awaiting confirmation"
+      "awaiting": "Awaiting confirmation",
+      "connected": "{{count}} connected"
     },
     "kpi": {
       "requests": "API requests",
@@ -1032,6 +1033,69 @@
           "in": "HTTP Request",
           "out": "Webhook"
         }
+      }
+    },
+    "ai": {
+      "subtitle": "Connect Claude or another AI assistant over MCP. It can look things up and prepare drafts; people stay in charge of sending.",
+      "connectTitle": "Connect an assistant",
+      "url": "MCP server URL",
+      "client": "Assistant",
+      "terminal": "Terminal",
+      "clients": {
+        "claude": {
+          "name": "Claude",
+          "step1": "In Claude, open Settings → Connectors and choose “Add custom connector”.",
+          "step2": "Name it Pure Engage and paste {{url}}.",
+          "step3": "Choose Connect, sign in to Pure Engage as an admin and approve what Claude may do."
+        },
+        "claudeCode": {
+          "name": "Claude Code",
+          "step1": "Run the command below in your terminal.",
+          "step2": "Start Claude Code, run /mcp and choose pure-engage → Authenticate.",
+          "step3": "Approve the connection in the browser window that opens."
+        },
+        "other": {
+          "name": "Other MCP clients",
+          "step1": "Create an API key with the “AI: read only” or “AI: read and draft” preset.",
+          "step2": "Add a remote (Streamable HTTP) MCP server with the URL {{url}}.",
+          "step3": "Send the key as Authorization: Bearer <key>, or let the client sign in with OAuth if it supports it."
+        }
+      },
+      "canTitle": "What an assistant can do",
+      "can1": "Read results",
+      "can1Hint": "Campaign and journey performance, segments and their sizes, recent activity and headline numbers.",
+      "can2": "Prepare drafts",
+      "can2Hint": "Segments, email and SMS templates, and draft campaigns for a person to review.",
+      "cannot": "Never send",
+      "cannotHint": "There is no tool to send, schedule or activate anything. A person launches drafts in the console.",
+      "privacy": "Private by default",
+      "privacyHint": "Contact details are masked unless you grant full personal details. Every lookup is in the audit log.",
+      "connected": "Connected assistants",
+      "none": "No assistants connected yet",
+      "noneHint": "Follow the steps above. Connections you approve appear here and can be disconnected at any time.",
+      "approvedBy": "Approved by {{who}}",
+      "activity": "Activity",
+      "disconnect": "Disconnect"
+    },
+    "consent": {
+      "title": "{{name}} wants to connect to Pure Engage",
+      "subtitle": "After you approve, you'll be sent back to",
+      "allow": "Allow it to",
+      "never": "It can never send, schedule or activate messages, campaigns or journeys.",
+      "approve": "Approve",
+      "deny": "Deny",
+      "revokeHint": "You can disconnect it at any time under Integrations → AI assistants.",
+      "adminTitle": "Ask an admin to connect this assistant",
+      "adminOnly": "Only admins can connect AI assistants to Pure Engage.",
+      "back": "Back to Pure Engage",
+      "invalid": "This connection request isn't valid",
+      "why": {
+        "contacts_read": "Look up members by name or ID. Email, phone and profile fields stay masked.",
+        "contacts_read_pii": "See full names, emails, phone numbers and profile fields. Only grant this if you need it.",
+        "segments_read": "See saved audiences and count who matches.",
+        "campaigns_read": "See campaigns, templates and their results.",
+        "reports_read": "See headline numbers, journeys and recent activity.",
+        "drafts_write": "Create segments, templates and draft campaigns for you to review."
       }
     }
   }

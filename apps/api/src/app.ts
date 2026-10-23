@@ -24,6 +24,8 @@ import { consoleRoutes } from './routes/console.ts';
 import { assetRoutes } from './routes/assets.ts';
 import { v1Routes } from './routes/v1.ts';
 import { integrationRoutes } from './routes/integrations.ts';
+import { oauthRoutes, publicCors } from './routes/oauth.ts';
+import { mcpRoutes } from './routes/mcp.ts';
 
 export interface AppDeps {
   config: Config;
@@ -79,6 +81,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
   if (!config.PE_CONSOLE_DIR) app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found' }));
 
+  app.addHook('onRequest', publicCors);
   // Integration request log: one metadata row per call made with an API key or to an inbound webhook.
   app.addHook('onSend', async (req, reply, payload) => {
     if ((req.apiKey || req.integration) && reply.statusCode >= 400 && typeof payload === 'string') {
@@ -90,8 +93,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     if (!req.apiKey && !req.integration) return;
     try {
       await app.services.integrations.log({
-        apiKeyId: req.apiKey?.id ?? null, integrationId: req.integration?.id ?? null, method: req.method,
-        route: req.routeOptions.url ?? req.url.split('?')[0]!, status: reply.statusCode, durationMs: reply.elapsedTime,
+        apiKeyId: req.apiKey?.kind === 'api_key' ? req.apiKey.id : null, oauthGrantId: req.apiKey?.kind === 'oauth' ? req.apiKey.id : null,
+        integrationId: req.integration?.id ?? null, method: req.method,
+        route: req.logRoute ?? req.routeOptions.url ?? req.url.split('?')[0]!, status: reply.raw.statusCode, durationMs: reply.elapsedTime,
         items: req.logItems ?? null, error: (req as { logError?: string }).logError ?? null,
       });
     } catch (err) {
@@ -123,6 +127,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(assetRoutes);
   await app.register(v1Routes);
   await app.register(integrationRoutes);
+  await app.register(oauthRoutes);
+  await app.register(mcpRoutes);
   if (config.PURENET_WEBHOOK_SECRET) {
     await app.register(purenetRoutes, { webhookSecret: config.PURENET_WEBHOOK_SECRET, env: deps.purenetEnv });
   }
