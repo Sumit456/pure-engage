@@ -20,7 +20,7 @@ const schema = z.object({
   PE_LOGIN_RATE_LIMIT: z.coerce.number().int().min(1).default(10),
   // Optional first admin, created at startup only when there are no users yet.
   PE_ADMIN_EMAIL: z.string().email().optional(),
-  PE_ADMIN_PASSWORD: z.string().optional(),
+  PE_ADMIN_PASSWORD: z.string().min(12, 'PE_ADMIN_PASSWORD must be at least 12 characters').optional(),
   /** Seeds synthetic demo data at startup when there are no contacts yet (test deployments only). */
   PE_SEED_DEMO: bool.default('false'),
 

@@ -38,6 +38,7 @@ test('PE_SECRET_KEY takes a 32-byte base64 key or any random string of 32+ chara
   expect(loadConfig({ PE_SECRET_KEY: generated }).secretKey).toHaveLength(32);
   expect(loadConfig({ PE_SECRET_KEY: generated }).secretKey).toEqual(loadConfig({ PE_SECRET_KEY: generated }).secretKey);
   expect(() => loadConfig({ PE_SECRET_KEY: 'too-short' })).toThrow(/at least 32/);
+  expect(() => loadConfig({ PE_ADMIN_PASSWORD: 'short' })).toThrow(/PE_ADMIN_PASSWORD must be at least 12 characters/);
 });
 
 test('on Render, the public URL defaults to RENDER_EXTERNAL_URL', () => {
