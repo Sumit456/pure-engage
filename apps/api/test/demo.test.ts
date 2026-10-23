@@ -31,6 +31,15 @@ test('the demo seed fills every screen once, with synthetic values only', async 
   expect(await ctx.db.selectFrom('journey_enrollments').select('id').execute()).toHaveLength(5);
 });
 
+test('PE_SECRET_KEY takes a 32-byte base64 key or any random string of 32+ characters', () => {
+  const b64 = Buffer.alloc(32, 7).toString('base64');
+  expect(loadConfig({ PE_SECRET_KEY: b64 }).secretKey).toEqual(Buffer.alloc(32, 7));
+  const generated = 'r9Xq2LmV8sKp4Tz7Wc1Nb6Hy3Fd0Ju5Ea'; // like a value from Render's Generate button
+  expect(loadConfig({ PE_SECRET_KEY: generated }).secretKey).toHaveLength(32);
+  expect(loadConfig({ PE_SECRET_KEY: generated }).secretKey).toEqual(loadConfig({ PE_SECRET_KEY: generated }).secretKey);
+  expect(() => loadConfig({ PE_SECRET_KEY: 'too-short' })).toThrow(/at least 32/);
+});
+
 test('on Render, the public URL defaults to RENDER_EXTERNAL_URL', () => {
   expect(loadConfig({ RENDER_EXTERNAL_URL: 'https://pure-engage-test.example.com' }).PE_PUBLIC_URL).toBe('https://pure-engage-test.example.com');
   expect(loadConfig({ RENDER_EXTERNAL_URL: 'https://a.example.com', PE_PUBLIC_URL: 'https://b.example.com' }).PE_PUBLIC_URL).toBe('https://b.example.com');
