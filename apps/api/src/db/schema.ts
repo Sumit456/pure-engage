@@ -1,6 +1,6 @@
 // Table types for Kysely. Keep in step with src/db/migrations/.
 import type { ColumnType, Generated, Insertable, JSONColumnType, Selectable } from 'kysely';
-import type { ConsentMap, JourneyDefinition, SegmentRules } from '@pure-engage/shared';
+import type { ApiScope, ConsentMap, InboundMapping, JourneyDefinition, SegmentRules } from '@pure-engage/shared';
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
 type NullableTimestamp = ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
@@ -44,6 +44,40 @@ export interface ApiKeysTable {
   created_at: Timestamp;
   last_used_at: NullableTimestamp;
   revoked_at: NullableTimestamp;
+  scopes: ColumnType<ApiScope[], ApiScope[] | string | undefined, ApiScope[] | string>;
+  expires_at: NullableTimestamp;
+}
+
+export interface InboundWebhookConfig {
+  mapping: InboundMapping;
+  /** `token`: a bearer token (or ?token= for tools that can only set a URL); `hmac`: X-PE-Signature like our outbound webhooks. */
+  auth: 'token' | 'hmac';
+}
+
+export interface IntegrationsTable {
+  id: Generated<string>;
+  kind: 'inbound_webhook';
+  name: string;
+  config: ColumnType<InboundWebhookConfig, InboundWebhookConfig | string | undefined, InboundWebhookConfig | string>;
+  secret_encrypted: string;
+  enabled: Generated<boolean>;
+  created_by: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  last_seen_at: NullableTimestamp;
+}
+
+export interface IntegrationRequestsTable {
+  id: Generated<string>;
+  at: Timestamp;
+  api_key_id: string | null;
+  integration_id: string | null;
+  method: string;
+  route: string;
+  status: number;
+  duration_ms: number;
+  items: number | null;
+  error: string | null;
 }
 
 export interface AuditLogTable {
@@ -308,6 +342,8 @@ export interface Database {
   webhooks: WebhooksTable;
   assets: AssetsTable;
   webhook_deliveries: WebhookDeliveriesTable;
+  integrations: IntegrationsTable;
+  integration_requests: IntegrationRequestsTable;
 }
 
 export type Template = Selectable<TemplatesTable>;
@@ -318,6 +354,7 @@ export type Journey = Selectable<JourneysTable>;
 export type Enrollment = Selectable<JourneyEnrollmentsTable>;
 export type Webhook = Selectable<WebhooksTable>;
 export type WebhookDelivery = Selectable<WebhookDeliveriesTable>;
+export type Integration = Selectable<IntegrationsTable>;
 
 export type User = Selectable<UsersTable>;
 export type Contact = Selectable<ContactsTable>;

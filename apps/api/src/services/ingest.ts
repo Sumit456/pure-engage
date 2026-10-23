@@ -40,9 +40,11 @@ export function createIngestService(contacts: ContactsService, events: EventsSer
         const item = trackEventSchema.safeParse(raw);
         if (!item.success) { result.errors.push({ type: 'event', index, error: item.error.issues.map((i) => `${i.path.join('.') || 'event'}: ${i.message}`).join('; ') }); continue; }
         try {
-          // Keys from API callers live under `api:` so they can never collide with keys the platform and the
-          // PureNet receiver mint (`purenet:`, `journey:`, `campaign:`) and suppress a legitimate event.
-          const key = item.data.idempotency_key && opts.source === 'api' ? `api:${item.data.idempotency_key}` : item.data.idempotency_key;
+          // Keys from API callers live under `api:` (inbound webhooks under `hook:<id>:`) so they can never collide
+          // with keys the platform and the PureNet receiver mint (`purenet:`, `journey:`, `campaign:`) and suppress
+          // a legitimate event.
+          const ns = opts.source === 'api' ? 'api:' : opts.source.startsWith('hook:') ? `${opts.source}:` : '';
+          const key = item.data.idempotency_key && `${ns}${item.data.idempotency_key}`;
           const { duplicate } = await events.track({ ...item.data, idempotency_key: key }, opts);
           if (duplicate) result.duplicates++;
           else result.events_processed++;

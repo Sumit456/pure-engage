@@ -1,5 +1,6 @@
 import { sql, type Kysely } from 'kysely';
 import { z } from 'zod';
+import { API_SCOPES, LEGACY_SCOPES, type ApiScope } from '@pure-engage/shared';
 import type { Database, Role, User } from '../db/schema.ts';
 import { badRequest, conflict, notFound } from '../errors.ts';
 import { audit, type Actor } from './audit.ts';
@@ -24,6 +25,14 @@ export const updateUserSchema = z.object({
   active: z.boolean().optional(),
   password: passwordSchema.optional(),
 });
+
+export const apiKeySchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100),
+  scopes: z.array(z.enum(API_SCOPES)).min(1, 'Choose at least one permission').transform((s) => [...new Set(s)]),
+  expires_at: z.string().datetime({ offset: true }).nullable().optional(),
+});
+
+export interface VerifiedApiKey { id: string; name: string; scopes: ApiScope[] }
 
 export interface SessionPolicy {
   idleMinutes: number;
@@ -148,21 +157,22 @@ export function createAuthService(db: Kysely<Database>, policy: SessionPolicy) {
     },
 
     // ---- API keys: `pe_<prefix>_<secret>`; only the hash is stored ----
-    async createApiKey(name: string, actor: Actor) {
-      if (!name.trim()) throw badRequest('Name is required');
+    async createApiKey(input: z.input<typeof apiKeySchema> | string, actor: Actor) {
+      const data = apiKeySchema.parse(typeof input === 'string' ? { name: input, scopes: LEGACY_SCOPES } : input);
+      if (data.expires_at && Date.parse(data.expires_at) <= Date.now()) throw badRequest('Expiry must be in the future', [{ path: 'expires_at', message: 'Must be in the future' }]);
       const prefix = randomToken(6).replace(/[-_]/g, 'x').slice(0, 8);
       const key = `pe_${prefix}_${randomToken(32)}`;
       const row = await db
         .insertInto('api_keys')
-        .values({ name: name.trim().slice(0, 100), prefix, key_hash: sha256(key), created_by: actor.type === 'user' ? actor.id : null })
-        .returning(['id', 'name', 'prefix', 'created_at'])
+        .values({ name: data.name, prefix, key_hash: sha256(key), scopes: JSON.stringify(data.scopes), expires_at: data.expires_at ?? null, created_by: actor.type === 'user' ? actor.id : null })
+        .returning(['id', 'name', 'prefix', 'scopes', 'expires_at', 'created_at'])
         .executeTakeFirstOrThrow();
-      await audit(db, actor, { action: 'api_key.create', entityType: 'api_key', entityId: row.id });
+      await audit(db, actor, { action: 'api_key.create', entityType: 'api_key', entityId: row.id, details: { scopes: data.scopes } });
       return { ...row, key };
     },
 
     async listApiKeys() {
-      return db.selectFrom('api_keys').select(['id', 'name', 'prefix', 'created_at', 'last_used_at', 'revoked_at']).orderBy('created_at', 'desc').execute();
+      return db.selectFrom('api_keys').select(['id', 'name', 'prefix', 'scopes', 'expires_at', 'created_at', 'last_used_at', 'revoked_at']).orderBy('created_at', 'desc').execute();
     },
 
     async revokeApiKey(id: string, actor: Actor): Promise<void> {
@@ -171,15 +181,16 @@ export function createAuthService(db: Kysely<Database>, policy: SessionPolicy) {
       await audit(db, actor, { action: 'api_key.revoke', entityType: 'api_key', entityId: id });
     },
 
-    async verifyApiKey(key: string): Promise<{ id: string; name: string } | null> {
+    async verifyApiKey(key: string): Promise<VerifiedApiKey | null> {
       const m = /^pe_([A-Za-z0-9]{8})_[A-Za-z0-9_-]{20,}$/.exec(key);
       if (!m) return null;
-      const row = await db.selectFrom('api_keys').select(['id', 'name', 'key_hash', 'last_used_at']).where('prefix', '=', m[1]!).where('revoked_at', 'is', null).executeTakeFirst();
+      const row = await db.selectFrom('api_keys').select(['id', 'name', 'key_hash', 'scopes', 'expires_at', 'last_used_at']).where('prefix', '=', m[1]!).where('revoked_at', 'is', null).executeTakeFirst();
       if (!row || !safeEqual(row.key_hash, sha256(key))) return null;
+      if (row.expires_at && row.expires_at.getTime() <= Date.now()) return null;
       if (!row.last_used_at || Date.now() - row.last_used_at.getTime() > 60_000) {
         await db.updateTable('api_keys').set({ last_used_at: new Date() }).where('id', '=', row.id).execute();
       }
-      return { id: row.id, name: row.name };
+      return { id: row.id, name: row.name, scopes: row.scopes };
     },
   };
 }

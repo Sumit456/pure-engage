@@ -35,7 +35,7 @@ test('build a bilingual SMS template, send it through the API and follow it in t
   const templateId = page.url().split('/').pop()!;
 
   // Send through the public API with a fresh API key (as an integration would).
-  const key = (await (await page.request.post('/api/api-keys', { headers: { 'x-pe-csrf': '1' }, data: { name: 'e2e' } })).json()).key as string;
+  const key = (await (await page.request.post('/api/api-keys', { headers: { 'x-pe-csrf': '1' }, data: { name: 'e2e', scopes: ['contacts:write', 'consent:write', 'events:write', 'messages:send'] } })).json()).key as string;
   const send = await page.request.post('/api/v1/messages/send', {
     headers: { authorization: `Bearer ${key}` },
     data: { template_id: templateId, bypass_quiet_hours: true, recipients: [

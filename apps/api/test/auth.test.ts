@@ -141,7 +141,7 @@ describe('roles and user admin', () => {
 describe('API keys', () => {
   test('shown once, stored hashed, revocable', async () => {
     const admin = await loginAs(ctx.app, 'admin');
-    const created = await admin.request({ method: 'POST', url: '/api/api-keys', payload: { name: 'PureNet bridge' } });
+    const created = await admin.request({ method: 'POST', url: '/api/api-keys', payload: { name: 'PureNet bridge', scopes: ['events:write', 'contacts:write'] } });
     expect(created.statusCode).toBe(201);
     const { key, id } = created.json();
     expect(key).toMatch(/^pe_[A-Za-z0-9]{8}_/);

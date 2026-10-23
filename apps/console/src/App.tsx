@@ -18,8 +18,14 @@ import { JourneysPage } from './pages/journeys/JourneysPage.tsx';
 import { JourneyEditorPage } from './pages/journeys/JourneyEditorPage.tsx';
 import { ReportsPage } from './pages/reports/ReportsPage.tsx';
 import { SettingsPage } from './pages/settings/SettingsPage.tsx';
+import { IntegrationsPage } from './pages/integrations/IntegrationsPage.tsx';
+import { ApiKeysPage } from './pages/integrations/ApiKeysPage.tsx';
+import { InboundEditorPage, InboundListPage } from './pages/integrations/InboundPages.tsx';
+import { OutboundPage } from './pages/integrations/OutboundPage.tsx';
+import { ApiReferencePage } from './pages/integrations/ApiReferencePage.tsx';
+import { NoCodePage } from './pages/integrations/NoCodePage.tsx';
 
-const BUILT = new Set(['dashboard', 'contacts', 'templates', 'messages', 'segments', 'campaigns', 'journeys', 'reports', 'settings']);
+const BUILT = new Set(['dashboard', 'contacts', 'templates', 'messages', 'segments', 'campaigns', 'journeys', 'reports', 'settings', 'integrations']);
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <Login /> },
@@ -42,6 +48,13 @@ export const routes: RouteObject[] = [
       { path: 'messages', element: <MessagesPage /> },
       { path: 'reports', element: <ReportsPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'integrations', element: <IntegrationsPage /> },
+      { path: 'integrations/api', element: <ApiKeysPage /> },
+      { path: 'integrations/inbound', element: <InboundListPage /> },
+      { path: 'integrations/inbound/:id', element: <InboundEditorPage /> },
+      { path: 'integrations/outbound', element: <OutboundPage /> },
+      { path: 'integrations/reference', element: <ApiReferencePage /> },
+      { path: 'integrations/no-code', element: <NoCodePage /> },
       { path: 'messages/:id', element: <MessageDetailPage /> },
       ...NAV.filter((k) => !BUILT.has(k)).map((k) => ({ path: k, element: <ComingSoon section={k} /> })),
     ],

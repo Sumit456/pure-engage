@@ -1,0 +1,10 @@
+{
+  "name": "@pure-engage/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "JavaScript client for the Pure Engage public API (docs/contracts/platform-ingest.openapi.yaml) and webhook signature helpers.",
+  "exports": { ".": { "types": "./src/index.d.ts", "default": "./src/index.js" } },
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node --test 'test/**/*.test.js'" }
+}

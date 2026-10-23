@@ -2,6 +2,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { actorOf, requireUser } from '../plugins/auth.ts';
+import { apiKeySchema } from '../services/auth.ts';
 
 const idParam = z.object({ id: z.string().uuid() });
 const auditQuery = z.object({
@@ -20,8 +21,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   app.get('/api/api-keys', admin, async () => ({ data: await auth.listApiKeys() }));
   app.post('/api/api-keys', admin, async (req, reply) => {
-    const { name } = z.object({ name: z.string() }).parse(req.body);
-    return reply.code(201).send(await auth.createApiKey(name, actorOf(req)));
+    return reply.code(201).send(await auth.createApiKey(apiKeySchema.parse(req.body), actorOf(req)));
   });
   app.delete('/api/api-keys/:id', admin, async (req, reply) => {
     await auth.revokeApiKey(idParam.parse(req.params).id, actorOf(req));

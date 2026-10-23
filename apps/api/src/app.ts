@@ -22,6 +22,8 @@ import { reportRoutes } from './routes/reports.ts';
 import { webhookRoutes } from './routes/webhooks.ts';
 import { consoleRoutes } from './routes/console.ts';
 import { assetRoutes } from './routes/assets.ts';
+import { v1Routes } from './routes/v1.ts';
+import { integrationRoutes } from './routes/integrations.ts';
 
 export interface AppDeps {
   config: Config;
@@ -44,7 +46,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
     logger: config.NODE_ENV === 'test' ? false : {
       level: config.PE_LOG_LEVEL,
-      redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+      redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-pe-token"]', 'res.headers["set-cookie"]'],
+      // Query strings are dropped from logged URLs: inbound webhooks may carry their token there.
+      serializers: { req: (req) => ({ method: req.method, url: req.url.split('?')[0], host: req.host, remoteAddress: req.ip, remotePort: req.socket?.remotePort }) },
     },
     trustProxy: config.NODE_ENV === 'production',
     bodyLimit: 1024 * 1024,
@@ -75,6 +79,26 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
   if (!config.PE_CONSOLE_DIR) app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found' }));
 
+  // Integration request log: one metadata row per call made with an API key or to an inbound webhook.
+  app.addHook('onSend', async (req, reply, payload) => {
+    if ((req.apiKey || req.integration) && reply.statusCode >= 400 && typeof payload === 'string') {
+      try { (req as { logError?: string }).logError = String((JSON.parse(payload) as { error?: unknown }).error ?? ''); } catch { /* not JSON */ }
+    }
+    return payload;
+  });
+  app.addHook('onResponse', async (req, reply) => {
+    if (!req.apiKey && !req.integration) return;
+    try {
+      await app.services.integrations.log({
+        apiKeyId: req.apiKey?.id ?? null, integrationId: req.integration?.id ?? null, method: req.method,
+        route: req.routeOptions.url ?? req.url.split('?')[0]!, status: reply.statusCode, durationMs: reply.elapsedTime,
+        items: req.logItems ?? null, error: (req as { logError?: string }).logError ?? null,
+      });
+    } catch (err) {
+      req.log.warn({ err }, 'could not write integration request log');
+    }
+  });
+
   app.get('/healthz', async (_req, reply) => {
     try {
       await sql`select 1`.execute(deps.db);
@@ -97,6 +121,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(reportRoutes);
   await app.register(webhookRoutes);
   await app.register(assetRoutes);
+  await app.register(v1Routes);
+  await app.register(integrationRoutes);
   if (config.PURENET_WEBHOOK_SECRET) {
     await app.register(purenetRoutes, { webhookSecret: config.PURENET_WEBHOOK_SECRET, env: deps.purenetEnv });
   }

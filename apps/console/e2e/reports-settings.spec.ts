@@ -15,7 +15,7 @@ test('dashboard KPIs and reports reflect sent messages; the chart has a table vi
   await signIn(page);
   const csrf = { 'x-pe-csrf': '1' };
   const tpl = await (await page.request.post('/api/templates', { headers: csrf, data: { name: 'Report check', channel: 'email', purpose: 'care', content: { en: { subject: 'Hi', html: '<p>Hi</p>' } } } })).json();
-  const key = (await (await page.request.post('/api/api-keys', { headers: csrf, data: { name: 'reports-e2e' } })).json()).key;
+  const key = (await (await page.request.post('/api/api-keys', { headers: csrf, data: { name: 'reports-e2e', scopes: ['contacts:write', 'consent:write', 'messages:send'] } })).json()).key;
   await page.request.post('/api/v1/messages/send', { headers: { authorization: `Bearer ${key}` }, data: { template_id: tpl.id, recipients: [
     { external_id: 'MBR-TEST-REP-1', email: 'rep1@example.com', attributes: { consent: { email: { care: 'granted' } } } },
     { external_id: 'MBR-TEST-REP-2', email: 'rep2@example.com' },
@@ -42,24 +42,18 @@ test('dashboard KPIs and reports reflect sent messages; the chart has a table vi
   expect(csv.headers()['content-type']).toContain('text/csv');
 });
 
-test('settings: API keys are shown once; webhooks record test deliveries', async ({ page }) => {
+test('settings keeps delivery, users and audit; old API key and webhook links go to Integrations', async ({ page }) => {
   await signIn(page);
   await page.getByRole('navigation').getByRole('link', { name: 'Settings' }).click();
   await expect(page.getByRole('tab', { name: 'Delivery' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('Sandbox: nothing is sent')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'API keys' })).toHaveCount(0);
+  await page.goto('/settings?tab=apiKeys');
+  await expect(page).toHaveURL(/\/integrations\/api$/);
+  await page.goto('/settings?tab=webhooks');
+  await expect(page).toHaveURL(/\/integrations\/outbound$/);
 
-  await page.getByRole('tab', { name: 'API keys' }).click();
-  await page.getByLabel('Key name').fill('Settings e2e');
-  await page.getByRole('button', { name: 'Create API key' }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText('shown only once');
-  const secret = (await dialog.locator('.pe-secret').textContent())!;
-  expect(secret).toMatch(/^pe_[A-Za-z0-9]{8}_/);
-  await dialog.getByRole('button', { name: "I've saved it" }).click();
-  await expect(page.getByText(secret)).toHaveCount(0);
-  await expect(page.getByRole('row').filter({ hasText: 'Settings e2e' })).toBeVisible();
-
-  await page.getByRole('tab', { name: 'Webhooks' }).click();
+  // Outbound webhooks (now under Integrations) record test deliveries.
   await page.getByLabel('Name', { exact: true }).fill('Local receiver');
   await page.getByLabel('URL').fill('http://127.0.0.1:4201/hooks/does-not-exist');
   await page.getByRole('button', { name: 'Add webhook' }).click();
@@ -68,8 +62,8 @@ test('settings: API keys are shown once; webhooks record test deliveries', async
   await page.getByRole('button', { name: 'Send test' }).click();
   await expect(page.getByRole('row').filter({ hasText: 'pure_engage.test' }).getByText('Failed')).toBeVisible();
   await expect(page.getByRole('row').filter({ hasText: 'pure_engage.test' })).toContainText('404');
-  if (shots) await page.screenshot({ path: `${shots}/settings-webhooks.png`, fullPage: true });
+  if (shots) await page.screenshot({ path: `${shots}/integrations-outbound.png`, fullPage: true });
 
-  await page.getByRole('tab', { name: 'Audit log' }).click();
+  await page.goto('/settings?tab=audit');
   await expect(page.getByRole('row').filter({ hasText: 'webhook.create' })).toBeVisible();
 });

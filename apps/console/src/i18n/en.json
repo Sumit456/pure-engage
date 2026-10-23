@@ -13,7 +13,8 @@
     "journeys": "Journeys",
     "messages": "Messages",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "integrations": "Integrations"
   },
   "common": {
     "language": "Language",
@@ -584,8 +585,6 @@
       "delivery": "Delivery",
       "account": "My account",
       "users": "Users",
-      "apiKeys": "API keys",
-      "webhooks": "Webhooks",
       "audit": "Audit log"
     },
     "mode": "Mode",
@@ -647,14 +646,16 @@
     "who": "Who",
     "action": "Action",
     "entity": "Record",
-    "details": "Details"
+    "details": "Details",
+    "movedHint": "API keys and webhooks have moved to"
   },
   "shell": {
     "org": "Member engagement · UAE",
     "groups": {
       "audience": "Audience",
       "engage": "Engage",
-      "insights": "Insights"
+      "insights": "Insights",
+      "connect": "Connect"
     },
     "noteSandbox": "Sandbox: messages are recorded, never sent.",
     "noteLive": "Live sending. Consent and the allowlist are always checked.",
@@ -679,7 +680,9 @@
       "importContacts": "Import contacts",
       "newCampaign": "New campaign",
       "newJourney": "New journey",
-      "newTemplate": "New template"
+      "newTemplate": "New template",
+      "connectApp": "Connect an app",
+      "apiKeys": "API keys"
     }
   },
   "activity": {
@@ -785,5 +788,251 @@
     "library": "Or choose from your images",
     "useImage": "Use {{name}}",
     "removeImage": "Remove image"
+  },
+  "integrations": {
+    "subtitle": "Connect Pure Engage to any app: send data in, get events out, or let an AI assistant help.",
+    "adminOnly": "Only admins can set up integrations. Ask an admin to create API keys or webhooks for you.",
+    "adminOnlyShort": "Admins only",
+    "remove": "Remove",
+    "status": {
+      "notSetUp": "Not set up",
+      "keys": "{{count}} active",
+      "sources": "{{count}} receiving",
+      "endpoints": "{{count}} active",
+      "new": "New",
+      "soon": "Coming next",
+      "awaiting": "Awaiting confirmation"
+    },
+    "kpi": {
+      "requests": "API requests",
+      "errors": "Errors",
+      "last24h": "Last 24 hours",
+      "errorRate": "{{pct}}% of requests",
+      "keys": "Active API keys",
+      "keysHint": "Revoke any you no longer use",
+      "sources": "Webhooks on",
+      "sourcesHint": "Inbound and outbound"
+    },
+    "cards": {
+      "api": {
+        "title": "REST API & keys",
+        "body": "Your developers push contacts, events and consent, trigger journeys and send messages. Each key gets only the permissions it needs.",
+        "cta": "Manage keys"
+      },
+      "inbound": {
+        "title": "Inbound webhooks",
+        "body": "Any app that can post JSON (a booking system, a form, Zapier) sends data in. Map its fields once, no code needed.",
+        "cta": "Connect an app"
+      },
+      "outbound": {
+        "title": "Outbound webhooks",
+        "body": "Tell other apps when something happens: opens, clicks, consent changes, journey steps. Signed and retried.",
+        "cta": "Manage endpoints"
+      },
+      "ai": {
+        "title": "AI assistants (MCP)",
+        "body": "Let Claude or another AI assistant look up results and draft campaigns. It can draft, never send.",
+        "cta": "Set up"
+      },
+      "nocode": {
+        "title": "Zapier, Make & n8n",
+        "body": "Step-by-step recipes for connecting thousands of apps with no-code tools.",
+        "cta": "View recipes"
+      },
+      "import": {
+        "title": "CSV & Excel import",
+        "body": "Upload a file of contacts, map its columns and check every row before anything is saved.",
+        "cta": "Import contacts"
+      },
+      "reference": {
+        "title": "API reference",
+        "body": "Every endpoint, the permission it needs, and ready-to-run examples.",
+        "cta": "Open reference"
+      },
+      "purenet": {
+        "title": "PureNet",
+        "body": "The PureNet connector is built against a mock and waits for the PureNet team to confirm the contract.",
+        "cta": "Waiting for the PureNet team"
+      }
+    },
+    "log": {
+      "title": "Recent requests",
+      "empty": "No requests yet",
+      "emptyHint": "Calls made with an API key or to an inbound webhook appear here (details of the call only, never the data sent).",
+      "source": "Source",
+      "request": "Request",
+      "items": "Items",
+      "duration": "Time"
+    },
+    "api": {
+      "subtitle": "Keys for your own systems. Give each app its own key with only the permissions it needs.",
+      "emptyHint": "Create a key for each system that talks to Pure Engage.",
+      "state": {
+        "active": "Active",
+        "revoked": "Revoked",
+        "expired": "Expired"
+      },
+      "expires": "Expires",
+      "quickstart": "Quick start",
+      "quickstartHint": "Send your first contact and event. Replace $PE_API_KEY with your key.",
+      "trackExample": "Add a contact and record an event",
+      "sdkExample": "With the JavaScript SDK",
+      "namePlaceholder": "e.g. Booking system",
+      "preset": "Start from",
+      "permissions": "Permissions",
+      "piiWarning": "This key can read full names, emails, phone numbers and profile fields. Every read is recorded in the audit log.",
+      "expiry": "Expires",
+      "expiryOptions": {
+        "never": "Never",
+        "30": "In 30 days",
+        "90": "In 90 days",
+        "365": "In a year"
+      },
+      "scopeCount": "{{count}} of {{total}} permissions"
+    },
+    "presets": {
+      "ingest": "Send data in",
+      "messaging": "Messaging",
+      "ai_read": "AI: read only",
+      "ai_drafts": "AI: read and draft",
+      "full": "Everything"
+    },
+    "scopeGroups": {
+      "contacts": "Contacts & events",
+      "messaging": "Messaging",
+      "insights": "Insights",
+      "drafts": "Drafts"
+    },
+    "scopes": {
+      "contacts_read": "Read contacts (masked)",
+      "contacts_read_pii": "See full personal details",
+      "contacts_write": "Create and update contacts",
+      "consent_write": "Change consent",
+      "events_write": "Record events",
+      "journeys_trigger": "Start journeys",
+      "messages_send": "Send messages",
+      "messages_read": "Read message status",
+      "segments_read": "Read segments",
+      "campaigns_read": "Read campaigns",
+      "reports_read": "Read reports",
+      "drafts_write": "Create drafts (never send)"
+    },
+    "inbound": {
+      "subtitle": "Receive data from any app that can post JSON.",
+      "new": "New inbound webhook",
+      "empty": "No inbound webhooks yet",
+      "emptyHint": "Create one for each app that should send contacts or events.",
+      "on": "Receiving",
+      "summaryEvent": "Updates contacts and records {{event}}",
+      "summaryContacts": "Updates contacts",
+      "lastSeen": "Last received",
+      "editorHint": "Paste an example of what the app sends, then point each field at the right place.",
+      "create": "Create webhook",
+      "saved": "Saved.",
+      "step1": "1. Name and security",
+      "namePlaceholder": "e.g. Booking system",
+      "auth": "How the app proves it's allowed",
+      "authToken": "Secret token (simplest)",
+      "authHmac": "Signature (HMAC, most secure)",
+      "step2": "2. Example payload",
+      "useExample": "Use an example",
+      "sampleHint": "Paste an example with made-up values. It stays in your browser and is never saved.",
+      "sample": "Example payload",
+      "badJson": "This isn't valid JSON yet.",
+      "records": "Records",
+      "recordsOne": "The whole payload is one record",
+      "recordsEach": "Each item in {{path}}",
+      "step3": "3. Map fields",
+      "contactHint": "Map an external ID or an email so each record is matched to the right contact.",
+      "attributes": "Extra profile fields",
+      "attributeName": "Profile field",
+      "addAttribute": "Add profile field",
+      "consent": "Consent",
+      "consentHint": "Values like yes/no, true/false, granted/denied and opt-in/opt-out are understood.",
+      "purpose": "Purpose",
+      "field": "Field in payload",
+      "addConsent": "Add consent",
+      "event": "Event",
+      "eventToggle": "Record an event for each record",
+      "eventHint": "Events can start journeys, e.g. appointment.booked.",
+      "eventName": "Event name",
+      "eventTime": "When it happened",
+      "eventKey": "Unique ID",
+      "eventKeyHint": "Stops the same event being recorded twice",
+      "propertyName": "Property",
+      "addProperty": "Add property",
+      "preview": "What this becomes",
+      "previewEmpty": "Paste an example payload to see the contacts and events it creates.",
+      "previewContacts": "Contacts ({{count}})",
+      "previewEvents": "Events ({{count}})",
+      "secretTitle": "Webhook secret",
+      "secretToken": "Send it as Authorization: Bearer <secret> (or the X-PE-Token header). Tools that can only set a URL can add ?token=<secret> to it.",
+      "secretHmac": "Sign each request with the header X-PE-Signature: t=<unix time>,v1=<HMAC-SHA256 of \"t.body\" with this secret>.",
+      "connect": "Connection",
+      "url": "Webhook URL",
+      "urlHintToken": "Send the secret as Authorization: Bearer <secret>.",
+      "urlHintHmac": "Sign every request with X-PE-Signature.",
+      "curl": "Try it from a terminal",
+      "sendTest": "Send test",
+      "sendTestHint": "Paste an example payload below to send a test.",
+      "testResult": "{{contacts}} contacts, {{events}} events, {{duplicates}} repeats",
+      "notInSample": "Not in the example",
+      "pathPlaceholder": "Pick or type a field"
+    },
+    "fields": {
+      "external_id": "External ID",
+      "email": "Email",
+      "phone": "Phone (E.164)",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "preferred_language": "Language",
+      "timezone": "Time zone"
+    },
+    "outbound": {
+      "empty": "No outbound webhooks yet",
+      "emptyHint": "Add an endpoint to tell another app when something happens.",
+      "verifyTitle": "Verify signatures",
+      "verifyHint": "Check X-PE-Signature on every delivery so you only trust requests that really come from Pure Engage."
+    },
+    "reference": {
+      "subtitle": "Generated from the live OpenAPI spec, so it always matches the API.",
+      "download": "Download OpenAPI",
+      "baseUrl": "Base URL",
+      "auth": "Authentication",
+      "search": "Search endpoints",
+      "scopes": "Needs"
+    },
+    "nocode": {
+      "subtitle": "Connect thousands of apps without writing code.",
+      "pick": "Tool",
+      "inTitle": "Send data into Pure Engage",
+      "outTitle": "Get events out of Pure Engage",
+      "in1": "Create an inbound webhook here and copy its URL and secret.",
+      "in2": "In {{tool}}, add the action “{{action}}” with method POST and the webhook URL.",
+      "in3": "Add the header Authorization: Bearer <secret> and send the data as JSON.",
+      "in4": "Run a test, then come back and map the fields using the example it sent.",
+      "out1": "In {{tool}}, start with the trigger “{{action}}” and copy the URL it gives you.",
+      "out2": "Add an outbound webhook here with that URL and the events you want (or * for all).",
+      "out3": "Press “Send test” so {{tool}} learns what the payload looks like.",
+      "out4": "Payloads carry IDs only. Look up details with the API if your flow needs them.",
+      "privacy": "Only send the fields a flow needs. Outbound payloads never include profile data, and every call is logged.",
+      "tools": {
+        "zapier": {
+          "name": "Zapier",
+          "in": "Webhooks by Zapier → POST",
+          "out": "Webhooks by Zapier → Catch Hook"
+        },
+        "make": {
+          "name": "Make",
+          "in": "HTTP → Make a request",
+          "out": "Webhooks → Custom webhook"
+        },
+        "n8n": {
+          "name": "n8n",
+          "in": "HTTP Request",
+          "out": "Webhook"
+        }
+      }
+    }
   }
 }

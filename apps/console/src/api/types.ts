@@ -1,4 +1,4 @@
-import type { ConsentMap, GroupRule, JourneyDefinition } from '@pure-engage/shared';
+import type { ApiScope, ConsentMap, GroupRule, InboundMapping, JourneyDefinition } from '@pure-engage/shared';
 
 export type Role = 'viewer' | 'marketer' | 'admin';
 
@@ -140,7 +140,22 @@ export interface CampaignReportRow { id: string; name: string; status: CampaignS
 export interface JourneyReportRow { id: string; name: string; status: JourneyStatus; runs: number; active: number; completed: number; exited: number }
 export interface WebhookSummary { id: string; name: string; url: string; events: string[]; enabled: boolean; created_at: string; updated_at: string }
 export interface WebhookDelivery { id: string; event_name: string; status: 'pending' | 'success' | 'failed'; attempts: number; next_attempt_at: string | null; response_code: number | null; error: string | null; created_at: string }
-export interface ApiKey { id: string; name: string; prefix: string; created_at: string; last_used_at: string | null; revoked_at: string | null }
+export interface ApiKey { id: string; name: string; prefix: string; scopes: ApiScope[]; expires_at: string | null; created_at: string; last_used_at: string | null; revoked_at: string | null }
+export interface InboundWebhook {
+  id: string; kind: 'inbound_webhook'; name: string; url: string; enabled: boolean;
+  config: { mapping: InboundMapping; auth: 'token' | 'hmac' };
+  created_at: string; updated_at: string; last_seen_at: string | null;
+}
+export interface IntegrationRequest {
+  id: string; at: string; api_key_id: string | null; integration_id: string | null; api_key_name: string | null; integration_name: string | null;
+  method: string; route: string; status: number; duration_ms: number; items: number | null; error: string | null;
+}
+export interface IntegrationsOverview {
+  api_keys: number; inbound_webhooks: { total: number; enabled: number }; outbound_webhooks: { total: number; enabled: number };
+  requests_24h: number; errors_24h: number; hourly: number[];
+  by_source: { api_key_id: string | null; integration_id: string | null; requests: number; errors: number; last_at: string }[];
+}
+export interface TrackResultView { attributes_processed: number; events_processed: number; duplicates: number; errors: { type: string; index: number; error: string }[]; skipped?: string[] }
 export interface AdminUser extends User { active: boolean; created_at: string; last_login_at: string | null }
 export interface AuditEntry { id: string; at: string; actor_type: string; actor_id: string | null; action: string; entity_type: string | null; entity_id: string | null; details: Record<string, unknown> }
 

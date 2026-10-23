@@ -42,7 +42,7 @@ test('appointment reminders: start from the template, simulate, activate, and a 
 
   // A booking arrives through the ingest API (the same path the PureNet webhook uses).
   const csrf = { 'x-pe-csrf': '1' };
-  const key = (await (await page.request.post('/api/api-keys', { headers: csrf, data: { name: 'journey-e2e' } })).json()).key as string;
+  const key = (await (await page.request.post('/api/api-keys', { headers: csrf, data: { name: 'journey-e2e', scopes: ['contacts:write', 'consent:write', 'events:write'] } })).json()).key as string;
   const res = await page.request.post('/api/v1/track', {
     headers: { authorization: `Bearer ${key}` },
     data: {

@@ -9,6 +9,7 @@ COPY apps/api/package.json apps/api/
 COPY apps/console/package.json apps/console/
 COPY packages/shared/package.json packages/shared/
 COPY packages/purenet-connector/package.json packages/purenet-connector/
+COPY packages/sdk/package.json packages/sdk/
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN npm ci --no-audit --no-fund
 COPY tsconfig.base.json ./
@@ -24,9 +25,11 @@ COPY apps/api/package.json apps/api/
 COPY apps/console/package.json apps/console/
 COPY packages/shared/package.json packages/shared/
 COPY packages/purenet-connector/package.json packages/purenet-connector/
+COPY packages/sdk/package.json packages/sdk/
 RUN npm ci --omit=dev --no-audit --no-fund -w @pure-engage/api && npm cache clean --force
 COPY packages packages
 COPY apps/api/src apps/api/src
+COPY docs/contracts/platform-ingest.openapi.yaml docs/contracts/
 COPY --from=build /app/apps/console/dist apps/console/dist
 USER node
 EXPOSE 4200

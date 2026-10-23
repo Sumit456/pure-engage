@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { CornerDownLeft, LayoutTemplate, Megaphone, Upload, PenSquare, Search, User, Workflow, type LucideIcon } from 'lucide-react';
+import { CornerDownLeft, KeyRound, LayoutTemplate, Megaphone, Plug, Upload, PenSquare, Search, User, Workflow, type LucideIcon } from 'lucide-react';
 import { api } from '../api/client.ts';
 import type { CampaignSummary, Contact, Journey, Page, Template } from '../api/types.ts';
 import { NAV, NAV_ICONS, navPath } from './Shell.tsx';
@@ -64,6 +64,8 @@ export function CommandPalette() {
       { id: 'a-campaign', group: t('shell.palette.actions'), label: t('shell.palette.newCampaign'), icon: Megaphone, to: '/campaigns/new' },
       { id: 'a-journey', group: t('shell.palette.actions'), label: t('shell.palette.newJourney'), icon: Workflow, to: '/journeys/new' },
       { id: 'a-template', group: t('shell.palette.actions'), label: t('shell.palette.newTemplate'), icon: PenSquare, to: '/templates/new' },
+      { id: 'a-connect', group: t('shell.palette.actions'), label: t('shell.palette.connectApp'), icon: Plug, to: '/integrations/inbound/new' },
+      { id: 'a-key', group: t('shell.palette.actions'), label: t('shell.palette.apiKeys'), icon: KeyRound, to: '/integrations/api' },
     ].filter((i) => match(i.label));
     const pages: Item[] = NAV.map((k) => ({ id: `p-${k}`, group: t('shell.palette.pages'), label: t(`nav.${k}`), icon: NAV_ICONS[k], to: navPath(k) })).filter((i) => match(i.label));
     const people: Item[] = (debounced.length >= 2 ? contacts.data?.data ?? [] : []).map((c) => ({

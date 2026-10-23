@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
   BarChart3, ChevronsLeft, ChevronsRight, Filter, HeartPulse, Languages, LayoutDashboard, LayoutTemplate, LogOut, Megaphone, Menu,
-  MessagesSquare, Moon, Settings, ShieldCheck, Sun, Users, Workflow, type LucideIcon,
+  MessagesSquare, Moon, Plug, Settings, ShieldCheck, Sun, Users, Workflow, type LucideIcon,
 } from 'lucide-react';
 import { LANGUAGES, type Language } from '../i18n/index.ts';
 import { useLogout, useUser } from '../auth/auth.tsx';
@@ -15,17 +15,18 @@ import { CommandPalette } from './CommandPalette.tsx';
 import { Initials, Pill } from '../components/bits.tsx';
 import './shell.css';
 
-export const NAV = ['dashboard', 'contacts', 'segments', 'templates', 'campaigns', 'journeys', 'messages', 'reports', 'settings'] as const;
+export const NAV = ['dashboard', 'contacts', 'segments', 'templates', 'campaigns', 'journeys', 'messages', 'integrations', 'reports', 'settings'] as const;
 export type NavKey = (typeof NAV)[number];
 
 export const NAV_ICONS: Record<NavKey, LucideIcon> = {
   dashboard: LayoutDashboard, contacts: Users, segments: Filter, templates: LayoutTemplate, campaigns: Megaphone,
-  journeys: Workflow, messages: MessagesSquare, reports: BarChart3, settings: Settings,
+  journeys: Workflow, messages: MessagesSquare, integrations: Plug, reports: BarChart3, settings: Settings,
 };
 const GROUPS: { label: string | null; items: NavKey[] }[] = [
   { label: null, items: ['dashboard'] },
   { label: 'audience', items: ['contacts', 'segments'] },
   { label: 'engage', items: ['templates', 'campaigns', 'journeys', 'messages'] },
+  { label: 'connect', items: ['integrations'] },
   { label: 'insights', items: ['reports', 'settings'] },
 ];
 export const navPath = (key: NavKey) => (key === 'dashboard' ? '/' : `/${key}`);

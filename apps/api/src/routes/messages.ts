@@ -1,7 +1,7 @@
 // Outbox (console) and the transactional send API (docs/contracts/platform-ingest.openapi.yaml: /messages/send).
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { actorOf, requireApiKey, requireUser } from '../plugins/auth.ts';
+import { actorOf, assertScope, requireApiKey, requireUser } from '../plugins/auth.ts';
 import { audit } from '../services/audit.ts';
 import { HttpError, badRequest } from '../errors.ts';
 
@@ -58,7 +58,7 @@ export const messageRoutes: FastifyPluginAsync = async (app) => {
     allowlist: app.deps.config.PE_DELIVERY_MODE === 'live' && !!app.deps.config.PE_DELIVERY_ALLOWLIST,
   }));
 
-  app.post('/api/v1/messages/send', { preHandler: requireApiKey, config: { rateLimit: { max: 600, timeWindow: '1 minute' } } }, async (req, reply) => {
+  app.post('/api/v1/messages/send', { preHandler: requireApiKey('messages:send'), config: { rateLimit: { max: 600, timeWindow: '1 minute' } } }, async (req, reply) => {
     const body = sendSchema.parse(req.body);
     if (body.recipients.length > 100) throw new HttpError(413, 'Max 100 recipients per request');
     const template = await templates.get(body.template_id);
@@ -70,16 +70,23 @@ export const messageRoutes: FastifyPluginAsync = async (app) => {
       if (!parsed.success) { results.push({ error: parsed.error.issues.map((i) => i.message).join('; ') }); continue; }
       const r = parsed.data;
       try {
+        // Recipients that bring profile data, or don't exist yet, write contacts: that needs its own permission.
+        const writes = !r.contact_id && (r.phone || Object.keys(r.attributes).length || !(await contacts.findByRef(r)));
+        if (writes) assertScope(req, 'contacts:write');
         const contact = r.contact_id
           ? await contacts.get(r.contact_id)
-          : (await contacts.upsert({ external_id: r.external_id, email: r.email, ...(r.phone ? { phone: r.phone } : {}), ...r.attributes }, { source: 'api', actor })).contact;
+          : writes
+            ? (await contacts.upsert({ external_id: r.external_id, email: r.email, ...(r.phone ? { phone: r.phone } : {}), ...r.attributes }, { source: 'api', actor })).contact
+            : (await contacts.findByRef(r))!;
         const m = await delivery.enqueue({ contact, templateId: template.id, data: r.properties, source: 'api', idempotencyKey: r.idempotency_key && `api:${r.idempotency_key}`, bypassQuietHours: body.bypass_quiet_hours && template.purpose === 'care' });
         results.push({ contact_id: contact.id, message_id: m.id, status: m.status, reason: m.status_reason });
       } catch (err) {
-        if (err instanceof HttpError && err.statusCode < 500) results.push({ error: err.message });
+        // A missing permission fails the whole request rather than one recipient.
+        if (err instanceof HttpError && err.statusCode < 500 && err.statusCode !== 403) results.push({ error: err.message });
         else throw err;
       }
     }
+    req.logItems = results.filter((r) => !('error' in r)).length;
     return reply.code(results.some((r) => 'error' in r) ? 207 : 201).send({ results });
   });
 };
