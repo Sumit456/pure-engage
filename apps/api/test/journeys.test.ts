@@ -237,3 +237,24 @@ describe('validation, simulation and API', () => {
     expect(localDateTime('not a date')).toBe('not a date');
   });
 });
+
+describe('canvas layout', () => {
+  test('positions are saved in any status, validated, and returned with the journey', async () => {
+    const marketer = await loginAs(ctx.app, 'marketer');
+    const viewer = await loginAs(ctx.app, 'viewer');
+    const j = (await marketer.request({ method: 'POST', url: '/api/journeys/starters/appointment-reminder' })).json();
+    expect((await marketer.request({ method: 'GET', url: `/api/journeys/${j.id}` })).json().layout).toEqual({});
+
+    const layout = { __trigger: { x: 0, y: 0 }, confirm: { x: 0, y: 160 }, day_before: { x: 0, y: 320 } };
+    await ctx.app.services.journeys.activate(j.id, SYS);
+    const saved = await marketer.request({ method: 'PUT', url: `/api/journeys/${j.id}/layout`, payload: { layout } });
+    expect(saved.statusCode).toBe(200);
+    const detail = (await viewer.request({ method: 'GET', url: `/api/journeys/${j.id}` })).json();
+    expect(detail.layout).toEqual(layout);
+    expect(detail.status).toBe('active'); // moving boxes doesn't touch the running journey
+
+    expect((await viewer.request({ method: 'PUT', url: `/api/journeys/${j.id}/layout`, payload: { layout } })).statusCode).toBe(403);
+    expect((await marketer.request({ method: 'PUT', url: `/api/journeys/${j.id}/layout`, payload: { layout: { 'bad id!': { x: 0, y: 0 } } } })).statusCode).toBe(400);
+    expect((await marketer.request({ method: 'PUT', url: `/api/journeys/${j.id}/layout`, payload: { layout: { a: { x: 'left', y: 0 } } } })).statusCode).toBe(400);
+  });
+});

@@ -320,6 +320,13 @@ export function createJourneysService({ db, contacts, templates, segments, deliv
       return Promise.all(rows.map(async (j) => ({ ...j, stats: await stats(j.id) })));
     },
 
+    async saveLayout(id: string, layout: Record<string, { x: number; y: number }>) {
+      const j = await getRow(id);
+      if (j.status === 'archived') throw conflict('Archived journeys cannot be changed');
+      await db.updateTable('journeys').set({ layout: JSON.stringify(layout) }).where('id', '=', id).execute();
+      return { layout };
+    },
+
     async detail(id: string) {
       const j = await getRow(id);
       return { ...j, problems: await problems(j.definition), stats: await stats(id) };

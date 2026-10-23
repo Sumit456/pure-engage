@@ -212,6 +212,8 @@ export interface JourneysTable {
   description: Generated<string>;
   status: Generated<JourneyStatus>;
   definition: Json<JourneyDefinition>;
+  /** Canvas positions per step id (and `__trigger`); presentation only. */
+  layout: JSONColumnType<Record<string, { x: number; y: number }>, string | undefined, string>;
   trigger_event: string;
   created_by: string | null;
   created_at: Timestamp;

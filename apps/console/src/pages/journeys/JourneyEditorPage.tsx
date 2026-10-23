@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
+import { Archive, ChevronLeft, GripVertical, Pause, Rocket, Save, Trash2, X, Zap, type LucideIcon } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { journeyProblems, nextSteps, type Duration, type JourneyDefinition, type JourneyStep } from '@pure-engage/shared';
+import { journeyProblems, type Duration, type JourneyDefinition, type JourneyStep } from '@pure-engage/shared';
 import { api, ApiError } from '../../api/client.ts';
 import type { Contact, JourneyDetail, JourneyRun, SimulationStep, Template } from '../../api/types.ts';
 import { hasRole, useUser } from '../../auth/auth.tsx';
@@ -11,15 +13,15 @@ import { Badge, Button, ErrorBanner, Ltr, Spinner, TextField, useFormatDate } fr
 import { GroupEditor } from '../segments/RuleBuilder.tsx';
 import { displayName } from '../contacts/ContactsPage.tsx';
 import { JourneyStatusBadge } from './JourneysPage.tsx';
+import { Pill, type Tone } from '../../components/bits.tsx';
+import { autoLayout, JourneyCanvas, outputs, PALETTE, stepLook, TRIGGER_ID, type Layout, type PaletteItem, type StepType } from './JourneyCanvas.tsx';
 
-type StepType = JourneyStep['type'];
-const STEP_TYPES: StepType[] = ['send', 'wait', 'wait_until', 'wait_for_event', 'split', 'update'];
 const zero: Duration = { days: 0, hours: 0, minutes: 0 };
 const newId = (type: StepType) => `${type}_${Math.random().toString(36).slice(2, 6)}`;
 
-function newStep(type: StepType, templates: Template[]): JourneyStep {
+function newStep(type: StepType, templates: Template[], channel?: 'email' | 'sms'): JourneyStep {
   switch (type) {
-    case 'send': return { type, template_id: templates[0]?.id ?? '', next: null };
+    case 'send': return { type, template_id: templates.find((tpl) => !channel || tpl.channel === channel)?.id ?? '', next: null };
     case 'wait': return { type, duration: { ...zero, days: 1 }, next: null };
     case 'wait_until': return { type, property: 'start', offset: { ...zero, hours: -24 }, if_past: 'continue', next: null };
     case 'wait_for_event': return { type, event_name: '', timeout: { ...zero, days: 1 }, matched: null, timed_out: null };
@@ -28,21 +30,15 @@ function newStep(type: StepType, templates: Template[]): JourneyStep {
   }
 }
 
-/** Drops steps no longer reachable from the start (after a delete). */
-function prune(def: JourneyDefinition): JourneyDefinition {
-  const keep = new Set<string>();
-  const walk = (id: string | null) => {
-    if (!id || keep.has(id) || !def.steps[id]) return;
-    keep.add(id);
-    nextSteps(def.steps[id]!).forEach(walk);
-  };
-  walk(def.start);
-  return { ...def, steps: Object.fromEntries(Object.entries(def.steps).filter(([id]) => keep.has(id))) };
-}
-
 const EMPTY: JourneyDefinition = { trigger: { event_name: 'purenet.appointment.booked' }, exit_on: [], start: '', steps: {} };
 
 export function JourneyEditorPage() {
+  return <ReactFlowProvider><JourneyEditor /></ReactFlowProvider>;
+}
+
+type PanelTab = 'checks' | 'test' | 'runs';
+
+function JourneyEditor() {
   const { id } = useParams();
   const isNew = !id || id === 'new';
   const { t } = useTranslation();
@@ -54,119 +50,213 @@ export function JourneyEditorPage() {
   const journey = useQuery({ queryKey: ['journey', id], enabled: !isNew, queryFn: ({ signal }) => api<JourneyDetail>(`/api/journeys/${id}`, { signal }) });
   const runs = useQuery({ queryKey: ['journey', id, 'runs'], enabled: !isNew, queryFn: ({ signal }) => api<{ data: JourneyRun[] }>(`/api/journeys/${id}/enrollments`, { signal }) });
   const templates = useQuery({ queryKey: ['templates'], queryFn: ({ signal }) => api<{ data: Template[] }>('/api/templates', { signal }) });
+  const tpls = templates.data?.data ?? [];
 
   const [name, setName] = useState('');
   const [def, setDef] = useState<JourneyDefinition>(EMPTY);
-  useEffect(() => { if (journey.data) { setName(journey.data.name); setDef(journey.data.definition); } }, [journey.data]);
+  const [layout, setLayout] = useState<Layout>({});
+  const [selected, setSelected] = useState<string | null>(null);
+  const [tab, setTab] = useState<PanelTab>('checks');
+  const [path, setPath] = useState<string[]>([]);
+  useEffect(() => {
+    if (!journey.data) return;
+    setName(journey.data.name);
+    setDef(journey.data.definition);
+    setLayout(autoLayout(journey.data.definition, journey.data.layout ?? {}));
+  }, [journey.data]);
 
   const status = journey.data?.status ?? 'draft';
   const canEdit = hasRole(user, 'marketer') && (status === 'draft' || status === 'paused');
+  const canArrange = hasRole(user, 'marketer') && status !== 'archived';
   const dirty = isNew || !journey.data || name !== journey.data.name || JSON.stringify(def) !== JSON.stringify(journey.data.definition);
   const problems = useMemo(() => (def.start ? journeyProblems(def) : [{ message: t('journeys.addFirstStep') }]), [def, t]);
 
   const refresh = (jid: string) => { void qc.invalidateQueries({ queryKey: ['journeys'] }); void qc.invalidateQueries({ queryKey: ['journey', jid] }); };
+  const saveLayout = useMutation({ mutationFn: ({ jid, l }: { jid: string; l: Layout }) => api(`/api/journeys/${jid}/layout`, { method: 'PUT', body: { layout: l } }) });
   const save = useMutation({
     mutationFn: () => isNew ? api<JourneyDetail>('/api/journeys', { method: 'POST', body: { name, definition: def } }) : api<JourneyDetail>(`/api/journeys/${id}`, { method: 'PUT', body: { name, definition: def } }),
-    onSuccess: (j) => { refresh(j.id); if (isNew) navigate(`/journeys/${j.id}`, { replace: true }); },
+    onSuccess: async (j) => {
+      await saveLayout.mutateAsync({ jid: j.id, l: pick(layout, def) });
+      refresh(j.id);
+      if (isNew) navigate(`/journeys/${j.id}`, { replace: true });
+    },
   });
   const action = useMutation({
     mutationFn: (verb: 'activate' | 'pause' | 'archive') => verb === 'archive' ? api(`/api/journeys/${id}`, { method: 'DELETE' }) : api(`/api/journeys/${id}/${verb}`, { method: 'POST' }),
     onSuccess: (_r, verb) => { refresh(id!); if (verb === 'archive') navigate('/journeys'); },
   });
 
-  const setStep = (sid: string, step: JourneyStep) => setDef({ ...def, steps: { ...def.steps, [sid]: step } });
-  /** Adds a step in the empty slot that `attach` fills. */
-  const addStep = (type: StepType, attach: (newStepId: string) => JourneyDefinition) => {
-    const sid = newId(type);
-    const base = attach(sid);
-    setDef({ ...base, steps: { ...base.steps, [sid]: newStep(type, templates.data?.data ?? []) } });
-  };
-  const removeStep = (sid: string, detach: (replacement: string | null) => JourneyDefinition) => {
-    const step = def.steps[sid]!;
-    const replacement = 'next' in step ? step.next : null; // branching steps drop their branches
-    setDef(prune(detach(replacement)));
+  // Positions are saved as soon as a drag ends (existing journeys) or with the first save (new ones).
+  const onLayout = useCallback((l: Layout, persist: boolean) => {
+    setLayout(l);
+    if (persist && !isNew && id) saveLayout.mutate({ jid: id, l: pick(l, def) });
+  }, [isNew, id, def, saveLayout]);
+
+  const addStep = (item: PaletteItem, at?: { x: number; y: number }) => {
+    const sid = newId(item.type);
+    const step = newStep(item.type, tpls, item.channel);
+    let next: JourneyDefinition = { ...def, steps: { ...def.steps, [sid]: step } };
+    let pos = at;
+    // Clicking (rather than dragging) adds the step after the selected one, on its first free output.
+    if (!at) {
+      const from = selected && (selected === TRIGGER_ID ? (!def.start ? TRIGGER_ID : null) : def.steps[selected] ? selected : null);
+      let shift = 0;
+      if (from === TRIGGER_ID) next = { ...next, start: sid };
+      else if (from) {
+        const parent = def.steps[from]!;
+        const outs = outputs(parent);
+        const free = outs.find((f) => !(parent as Record<string, unknown>)[f]);
+        if (free) next = { ...next, steps: { ...next.steps, [from]: { ...parent, [free]: sid } as JourneyStep } };
+        if (outs.length > 1 && free) shift = outs.indexOf(free) === 0 ? -150 : 150; // branches sit side by side
+      }
+      const base = (from && layout[from]) || { x: 0, y: Math.max(0, ...Object.values(layout).map((p) => p.y)) };
+      pos = { x: base.x + shift, y: base.y + 150 };
+      // Never drop a new step exactly on top of another one.
+      while (Object.values(layout).some((p) => Math.abs(p.x - pos!.x) < 200 && Math.abs(p.y - pos!.y) < 90)) pos = { x: pos.x + 280, y: pos.y };
+    }
+    if (!next.start) next = { ...next, start: sid };
+    setDef(next);
+    setLayout({ ...layout, [sid]: pos! });
+    setSelected(sid);
   };
 
   if (!isNew && journey.isPending) return <div className="pe-center"><Spinner /></div>;
   if (!isNew && journey.error) return <ErrorBanner error={journey.error} />;
   const serverProblems = journey.data && !dirty ? journey.data.problems : [];
   const allProblems = [...problems, ...serverProblems.filter((p) => !problems.some((q) => q.step === p.step && q.message === p.message))];
+  const selectedStep = selected && selected !== TRIGGER_ID ? def.steps[selected] : undefined;
+  const fieldErrors = save.error instanceof ApiError ? Object.entries(save.error.fieldErrors()) : [];
 
   return (
-    <section>
-      <div className="pe-page-header"><Link to="/journeys" className="pe-muted">{t('journeys.backToList')}</Link></div>
-      <div className="pe-page-header">
-        <h1>{isNew ? t('journeys.new') : name}</h1>
+    <section className="pe-bleed pe-jeditor">
+      <header className="pe-jeditor__bar">
+        <Link to="/journeys" className="pe-icon-button" aria-label={t('journeys.backToList')}><ChevronLeft aria-hidden="true" className="pe-flip-rtl" /></Link>
+        <div className="pe-jeditor__name">
+          <h1 className="pe-visually-hidden">{isNew ? t('journeys.new') : name}</h1>
+          <input aria-label={t('templates.field.name')} value={name} placeholder={t('journeys.canvas.namePlaceholder')} disabled={!canEdit} onChange={(e) => setName(e.target.value)} />
+          <small className="pe-muted">{isNew ? t('journeys.canvas.unsaved') : dirty ? t('journeys.canvas.unsavedChanges') : t('journeys.canvas.saved', { when: formatDate(journey.data?.updated_at) })}</small>
+        </div>
         {!isNew && <JourneyStatusBadge status={status} />}
         <span className="pe-spacer" />
-        {canEdit && dirty && <Button variant="primary" busy={save.isPending} disabled={!name.trim() || !def.start} onClick={() => save.mutate()}>{t('common.save')}</Button>}
-        {!isNew && !dirty && hasRole(user, 'marketer') && (status === 'draft' || status === 'paused') && <Button variant="primary" busy={action.isPending} disabled={allProblems.length > 0} onClick={() => action.mutate('activate')}>{t('journeys.activate')}</Button>}
-        {!isNew && hasRole(user, 'marketer') && status === 'active' && <Button busy={action.isPending} onClick={() => action.mutate('pause')}>{t('journeys.pause')}</Button>}
-        {!isNew && hasRole(user, 'marketer') && status !== 'active' && <Button variant="danger" busy={action.isPending} onClick={() => action.mutate('archive')}>{t('journeys.archive')}</Button>}
-      </div>
-      <ErrorBanner error={save.error ?? action.error} />
-      {status === 'active' && <p className="pe-muted">{t('journeys.pauseToEdit')}</p>}
+        {allProblems.length > 0
+          ? <Pill tone="warning">{t('journeys.canvas.problems', { count: allProblems.length })}</Pill>
+          : <Pill tone="success" dot>{t('journeys.canvas.valid')}</Pill>}
+        {canEdit && dirty && <Button variant="primary" busy={save.isPending} disabled={!name.trim() || !def.start} onClick={() => save.mutate()}><Save aria-hidden="true" />{t('common.save')}</Button>}
+        {!isNew && !dirty && hasRole(user, 'marketer') && (status === 'draft' || status === 'paused') && <Button variant="primary" busy={action.isPending} disabled={allProblems.length > 0} onClick={() => action.mutate('activate')}><Rocket aria-hidden="true" />{t('journeys.activate')}</Button>}
+        {!isNew && hasRole(user, 'marketer') && status === 'active' && <Button busy={action.isPending} onClick={() => action.mutate('pause')}><Pause aria-hidden="true" />{t('journeys.pause')}</Button>}
+        {!isNew && hasRole(user, 'marketer') && status !== 'active' && <Button variant="ghost" busy={action.isPending} onClick={() => action.mutate('archive')}><Archive aria-hidden="true" />{t('journeys.archive')}</Button>}
+      </header>
+      {(save.error || action.error) && <div className="pe-jeditor__errors"><ErrorBanner error={save.error ?? action.error} />{fieldErrors.length > 0 && <ul className="pe-plain-list">{fieldErrors.map(([k, v]) => <li key={k} className="pe-field__error"><code><Ltr>{k}</Ltr></code>: {v}</li>)}</ul>}</div>}
+      {status === 'active' && <div className="pe-jeditor__note" role="status">{t('journeys.pauseToEdit')}</div>}
 
-      <div className="pe-grid-2 pe-grid-2--wide-first">
-        <div className="pe-stack">
-          <div className="pe-card pe-stack">
-            <TextField label={t('templates.field.name')} value={name} disabled={!canEdit} onChange={(e) => setName(e.target.value)} />
-            <TriggerEditor def={def} onChange={setDef} readOnly={!canEdit} />
-          </div>
-
-          <div className="pe-card pe-stack" aria-label={t('journeys.steps')}>
-            <h2>{t('journeys.steps')}</h2>
-            <div className="pe-flow">
-              <div className="pe-flow__start">{t('journeys.whenTriggered', { event: def.trigger.event_name || '…' })}</div>
-              <StepTree
-                id={def.start || null}
-                def={def}
-                templates={templates.data?.data ?? []}
-                stats={journey.data?.stats.steps ?? {}}
-                readOnly={!canEdit}
-                setStep={setStep}
-                onAdd={(type) => addStep(type, (sid) => ({ ...def, start: sid }))}
-                onRemoveStart={(sid) => removeStep(sid, (rep) => ({ ...def, start: rep ?? '' }))}
-                addStep={addStep}
-                removeStep={removeStep}
-              />
+      <div className="pe-jeditor__body">
+        <aside className="pe-palette-panel" aria-label={t('journeys.canvas.activities')}>
+          {(['messages', 'flow', 'actions'] as const).map((g) => (
+            <div key={g} className="pe-palette-panel__group">
+              <div className="pe-nav__label">{t(`journeys.canvas.groups.${g}`)}</div>
+              {PALETTE.filter((p) => p.group === g).map((item) => (
+                <button
+                  key={item.key} type="button" className="pe-palette-item" disabled={!canEdit} draggable={canEdit}
+                  onDragStart={(e) => { e.dataTransfer.setData('application/x-pe-journey-step', item.key); e.dataTransfer.effectAllowed = 'copy'; }}
+                  onClick={() => addStep(item)}
+                >
+                  <span className={`pe-iconchip pe-pill--${item.tone}`} aria-hidden="true"><item.icon /></span>
+                  <span>{t(`journeys.canvas.items.${item.key}`)}</span>
+                  <GripVertical aria-hidden="true" className="pe-palette-item__grip" />
+                </button>
+              ))}
             </div>
-          </div>
-        </div>
+          ))}
+          <p className="pe-muted pe-palette-panel__hint">{canEdit ? t('journeys.canvas.paletteHint') : t('journeys.canvas.readOnlyHint')}</p>
+        </aside>
 
-        <div className="pe-stack">
-          <div className="pe-card pe-stack" aria-live="polite">
-            <h2>{t('journeys.checks')}</h2>
-            {allProblems.length === 0 ? <p className="pe-ok">{t('journeys.noProblems')}</p> : (
-              <ul className="pe-plain-list">{allProblems.map((p, i) => <li key={i} className="pe-field__error">{p.step ? <><code><Ltr>{p.step}</Ltr></code>: </> : null}{p.message}</li>)}</ul>
-            )}
-          </div>
-          {def.start && allProblems.length === 0 && <Simulator def={def} />}
-          {!isNew && journey.data && (
-            <div className="pe-card pe-stack">
-              <h2>{t('journeys.runs.title')}</h2>
-              <div className="pe-stats">
-                {(['active', 'completed', 'exited'] as const).map((k) => <div key={k} className="pe-stat"><strong>{journey.data!.stats.enrollments[k].toLocaleString()}</strong><span className="pe-muted">{t(`journeys.runs.${k}`)}</span></div>)}
+        <JourneyCanvas
+          def={def} layout={layout} templates={tpls} stats={journey.data?.stats.steps ?? {}} entered={journey.data ? journey.data.stats.enrollments.active + journey.data.stats.enrollments.completed + journey.data.stats.enrollments.exited : undefined}
+          problems={allProblems} path={path} selected={selected} fitKey={`${journey.data?.id ?? 'new'}:${Object.keys(layout).length > 0}`} editable={canEdit} arrangeable={canArrange} animated={status === 'active'}
+          onSelect={setSelected} onChange={(d) => { setDef(d); setPath([]); }} onLayout={onLayout} onDropItem={addStep}
+        />
+
+        <aside className="pe-inspector" aria-label={t('journeys.canvas.inspector')}>
+          {selected === TRIGGER_ID ? (
+            <div className="pe-stack">
+              <InspectorHead icon={Zap} tone="warning" label={t('journeys.trigger')} title={t('journeys.canvas.triggerSettings')} onClose={() => setSelected(null)} />
+              <TriggerEditor def={def} onChange={setDef} readOnly={!canEdit} />
+            </div>
+          ) : selectedStep ? (
+            <div className="pe-stack">
+              <InspectorHead
+                icon={stepLook(selectedStep, tpls).icon} tone={stepLook(selectedStep, tpls).tone}
+                label={t(`journeys.type.${selectedStep.type}`)} title={<Ltr>{selected!}</Ltr>} onClose={() => setSelected(null)}
+                onDelete={canEdit ? () => { const { [selected!]: _gone, ...rest } = def.steps; const steps = Object.fromEntries(Object.entries(rest).map(([k, s]) => [k, Object.fromEntries(Object.entries(s).map(([f, v]) => [f, v === selected ? null : v])) as JourneyStep])); setDef({ ...def, start: def.start === selected ? '' : def.start, steps }); setSelected(null); } : undefined}
+              />
+              {problemsFor(allProblems, selected!).map((p, i) => <p key={i} className="pe-alert pe-alert--danger">{p}</p>)}
+              <fieldset className="pe-step__body" disabled={!canEdit}>
+                <StepBody step={selectedStep} templates={tpls} readOnly={!canEdit} onChange={(s) => setDef({ ...def, steps: { ...def.steps, [selected!]: s } })} />
+              </fieldset>
+              {journey.data?.stats.steps[selected!] && (
+                <div className="pe-stats pe-inspector__stats">
+                  {Object.entries(journey.data.stats.steps[selected!]!).map(([k, v]) => <div key={k} className="pe-stat"><strong>{v.toLocaleString()}</strong><span className="pe-muted">{t(`journeys.outcome.${k}`, { defaultValue: k })}</span></div>)}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="pe-stack">
+              <div className="pe-tabs" role="tablist">
+                {(['checks', 'test', 'runs'] as const).map((k) => <button key={k} type="button" role="tab" aria-selected={tab === k} className="pe-tab" onClick={() => setTab(k)}>{t(`journeys.canvas.tabs.${k}`)}</button>)}
               </div>
-              {runs.data?.data.length ? (
-                <ul className="pe-plain-list">
-                  {runs.data.data.slice(0, 10).map((r) => (
-                    <li key={r.id} className="pe-row">
-                      <Link to={`/contacts/${r.contact_id}`}>{displayName({ ...r, email: null })}</Link>
-                      <Badge tone={r.status === 'active' ? 'brand' : r.status === 'completed' ? 'success' : 'neutral'}>{t(`journeys.runs.${r.status}`)}</Badge>
-                      <small className="pe-muted">{r.status === 'active' ? `${r.current_step ?? ''} · ${formatDate(r.next_run_at)}` : r.exit_reason ?? formatDate(r.completed_at)}</small>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="pe-muted">{t('journeys.runs.none')}</p>}
+              {tab === 'checks' && (
+                <div className="pe-stack" aria-live="polite">
+                  {allProblems.length === 0 ? <p className="pe-ok">{t('journeys.noProblems')}</p> : (
+                    <ul className="pe-plain-list">{allProblems.map((p, i) => <li key={i} className="pe-field__error">{p.step ? <button type="button" className="pe-linklike" onClick={() => setSelected(p.step!)}><Ltr>{p.step}</Ltr></button> : null}{p.step ? ': ' : ''}{p.message}</li>)}</ul>
+                  )}
+                  <p className="pe-muted">{t('journeys.canvas.checksHint')}</p>
+                </div>
+              )}
+              {tab === 'test' && (def.start && allProblems.length === 0 ? <Simulator def={def} onPath={setPath} /> : <p className="pe-muted">{t('journeys.canvas.fixFirst')}</p>)}
+              {tab === 'runs' && (!isNew && journey.data ? (
+                <div className="pe-stack">
+                  <div className="pe-stats">
+                    {(['active', 'completed', 'exited'] as const).map((k) => <div key={k} className="pe-stat"><strong>{journey.data!.stats.enrollments[k].toLocaleString()}</strong><span className="pe-muted">{t(`journeys.runs.${k}`)}</span></div>)}
+                  </div>
+                  {runs.data?.data.length ? (
+                    <ul className="pe-list">
+                      {runs.data.data.slice(0, 20).map((r) => (
+                        <li key={r.id}>
+                          <div className="pe-list__main">
+                            <Link to={`/contacts/${r.contact_id}`}>{displayName({ ...r, email: null })}</Link>
+                            <small>{r.status === 'active' ? `${r.current_step ?? ''} · ${formatDate(r.next_run_at)}` : r.exit_reason ?? formatDate(r.completed_at)}</small>
+                          </div>
+                          <Badge tone={r.status === 'active' ? 'brand' : r.status === 'completed' ? 'success' : 'neutral'}>{t(`journeys.runs.${r.status}`)}</Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : <p className="pe-muted">{t('journeys.runs.none')}</p>}
+                </div>
+              ) : <p className="pe-muted">{t('journeys.runs.none')}</p>)}
             </div>
           )}
-        </div>
+        </aside>
       </div>
-      {save.error instanceof ApiError && Object.keys(save.error.fieldErrors()).length > 0 && (
-        <ul className="pe-plain-list">{Object.entries(save.error.fieldErrors()).map(([k, v]) => <li key={k} className="pe-field__error"><code><Ltr>{k}</Ltr></code>: {v}</li>)}</ul>
-      )}
     </section>
+  );
+}
+
+const problemsFor = (list: { step?: string; message: string }[], step: string) => list.filter((p) => p.step === step).map((p) => p.message);
+/** Only positions of nodes that still exist are saved. */
+const pick = (l: Layout, def: JourneyDefinition): Layout => Object.fromEntries(Object.entries(l).filter(([k]) => k === TRIGGER_ID || def.steps[k]));
+
+function InspectorHead({ icon: Icon, tone, label, title, onClose, onDelete }: { icon: LucideIcon; tone: Tone; label: string; title: ReactNode; onClose: () => void; onDelete?: (() => void) | undefined }) {
+  const { t } = useTranslation();
+  return (
+    <div className="pe-inspector__head">
+      <span className={`pe-iconchip pe-pill--${tone}`} aria-hidden="true"><Icon /></span>
+      <div className="pe-inspector__titles">
+        <div className="pe-nav__label" style={{ padding: 0 }}>{label}</div>
+        <strong>{title}</strong>
+      </div>
+      {onDelete && <button type="button" className="pe-icon-button" aria-label={t('journeys.removeStep')} onClick={onDelete}><Trash2 aria-hidden="true" /></button>}
+      <button type="button" className="pe-icon-button" aria-label={t('common.close')} onClick={onClose}><X aria-hidden="true" /></button>
+    </div>
   );
 }
 
@@ -206,75 +296,6 @@ function TriggerEditor({ def, onChange, readOnly }: { def: JourneyDefinition; on
   );
 }
 
-interface TreeProps {
-  id: string | null;
-  def: JourneyDefinition;
-  templates: Template[];
-  stats: Record<string, Record<string, number>>;
-  readOnly: boolean;
-  setStep: (id: string, step: JourneyStep) => void;
-  onAdd: (type: StepType) => void;
-  onRemoveStart?: (id: string) => void;
-  addStep: (type: StepType, attach: (newStepId: string) => JourneyDefinition) => void;
-  removeStep: (id: string, detach: (replacement: string | null) => JourneyDefinition) => void;
-}
-
-/** Renders the step at `id` and everything after it; `null` renders the "add a step" slot. */
-function StepTree(props: TreeProps) {
-  const { id, def, readOnly, setStep, addStep, removeStep } = props;
-  const { t } = useTranslation();
-  if (!id) return readOnly ? <div className="pe-flow__end">{t('journeys.end')}</div> : <AddStep onAdd={props.onAdd} />;
-  const step = def.steps[id];
-  if (!step) return <div className="pe-field__error">{t('journeys.missingStep', { id })}</div>;
-
-  // A child slot: points this step's `field` at the new step, which takes over what the slot led to.
-  const childProps = (field: 'next' | 'yes' | 'no' | 'matched' | 'timed_out'): TreeProps => ({
-    ...props,
-    id: (step as Record<string, unknown>)[field] as string | null,
-    // The add slot only shows where nothing follows, so the new step simply fills it.
-    onAdd: (type) => addStep(type, (sid) => ({ ...def, steps: { ...def.steps, [id]: { ...step, [field]: sid } as JourneyStep } })),
-    onRemoveStart: undefined,
-  });
-
-  const remove = () => {
-    if (id === def.start) return props.onRemoveStart?.(id);
-    const parentEntry = Object.entries(def.steps).find(([, s]) => nextSteps(s).includes(id));
-    if (!parentEntry) return;
-    const [pid, parent] = parentEntry;
-    const field = (['next', 'yes', 'no', 'matched', 'timed_out'] as const).find((f) => (parent as Record<string, unknown>)[f] === id)!;
-    removeStep(id, (rep) => ({ ...def, steps: { ...def.steps, [pid]: { ...parent, [field]: rep } as JourneyStep } }));
-  };
-
-  const branches = step.type === 'split' ? (['yes', 'no'] as const) : step.type === 'wait_for_event' ? (['matched', 'timed_out'] as const) : null;
-  return (
-    <>
-      <StepCard id={id} step={step} templates={props.templates} stats={props.stats[id]} readOnly={readOnly} onChange={(s) => setStep(id, s)} onRemove={remove} />
-      {branches ? (
-        <div className="pe-flow__branches">
-          {branches.map((b) => (
-            <div key={b} className="pe-flow__branch">
-              <div className="pe-flow__label">{t(`journeys.branch.${b}`)}</div>
-              <StepTree {...childProps(b)} />
-            </div>
-          ))}
-        </div>
-      ) : <StepTree {...childProps('next')} />}
-    </>
-  );
-}
-
-function AddStep({ onAdd }: { onAdd: (type: StepType) => void }) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  if (!open) return <div className="pe-flow__add"><Button variant="ghost" onClick={() => setOpen(true)}>+ {t('journeys.addStep')}</Button></div>;
-  return (
-    <div className="pe-flow__add pe-row">
-      {STEP_TYPES.map((type) => <Button key={type} variant="ghost" onClick={() => { onAdd(type); setOpen(false); }}>{t(`journeys.type.${type}`)}</Button>)}
-      <Button variant="ghost" onClick={() => setOpen(false)}>×</Button>
-    </div>
-  );
-}
-
 function DurationInput({ value, onChange, allowNegative = false, label }: { value: Duration; onChange: (d: Duration) => void; allowNegative?: boolean; label: string }) {
   const { t } = useTranslation();
   return (
@@ -289,7 +310,7 @@ function DurationInput({ value, onChange, allowNegative = false, label }: { valu
   );
 }
 
-function StepCard({ id, step, templates, stats, readOnly, onChange, onRemove }: { id: string; step: JourneyStep; templates: Template[]; stats?: Record<string, number>; readOnly: boolean; onChange: (s: JourneyStep) => void; onRemove: () => void }) {
+export function StepBody({ step, templates, readOnly, onChange }: { step: JourneyStep; templates: Template[]; readOnly: boolean; onChange: (s: JourneyStep) => void }) {
   const { t } = useTranslation();
   let body;
   switch (step.type) {
@@ -345,18 +366,7 @@ function StepCard({ id, step, templates, stats, readOnly, onChange, onRemove }: 
       body = <AttributesEditor value={step.attributes} readOnly={readOnly} onChange={(a) => onChange({ ...step, attributes: a })} />;
       break;
   }
-  return (
-    <div className="pe-step" data-step={id}>
-      <div className="pe-row">
-        <strong>{t(`journeys.type.${step.type}`)}</strong>
-        <small className="pe-muted"><Ltr>{id}</Ltr></small>
-        <span className="pe-spacer" />
-        {stats && Object.entries(stats).filter(([k]) => k !== 'entered').map(([k, v]) => <Badge key={k} tone={k === 'failed' || k === 'exited' ? 'danger' : 'brand'}>{t(`journeys.outcome.${k}`, { defaultValue: k })}: {v}</Badge>)}
-        {!readOnly && <Button variant="ghost" aria-label={t('journeys.removeStep')} onClick={onRemove}>×</Button>}
-      </div>
-      <fieldset className="pe-step__body" disabled={readOnly}>{body}</fieldset>
-    </div>
-  );
+  return <>{body}</>;
 }
 
 function AttributesEditor({ value, onChange, readOnly }: { value: Record<string, string | number | boolean | null>; onChange: (v: Record<string, string | number | boolean | null>) => void; readOnly: boolean }) {
@@ -378,7 +388,7 @@ function AttributesEditor({ value, onChange, readOnly }: { value: Record<string,
   );
 }
 
-function Simulator({ def }: { def: JourneyDefinition }) {
+function Simulator({ def, onPath }: { def: JourneyDefinition; onPath: (steps: string[]) => void }) {
   const { t } = useTranslation();
   const formatDate = useFormatDate();
   const [contact, setContact] = useState<Contact | null>(null);
@@ -393,9 +403,10 @@ function Simulator({ def }: { def: JourneyDefinition }) {
   const [events, setEvents] = useState<string[]>([]);
   const run = useMutation({
     mutationFn: () => api<{ path: SimulationStep[] }>('/api/journeys/simulate', { method: 'POST', body: { definition: def, contact_id: contact?.id, context, events } }),
+    onSuccess: (r) => onPath(r.path.map((p) => p.step)),
   });
   return (
-    <div className="pe-card pe-stack">
+    <div className="pe-stack">
       <h2>{t('journeys.simulate')}</h2>
       <p className="pe-muted">{t('journeys.simulateHint')}</p>
       <ContactPicker label={t('journeys.simulateAs')} placeholder={t('campaigns.testPlaceholder')} value={contact} onChange={setContact} />

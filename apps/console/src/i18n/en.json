@@ -25,7 +25,8 @@
     "edit": "Edit",
     "delete": "Delete",
     "source": "Source",
-    "clear": "Clear"
+    "clear": "Clear",
+    "close": "Close"
   },
   "errors": {
     "generic": "Something went wrong. Please try again."
@@ -423,6 +424,54 @@
       "wait": "wait",
       "exit": "end",
       "update": "update"
+    },
+    "canvas": {
+      "chooseTemplate": "Choose a template",
+      "ifPast": {
+        "continue": "If already past: continue",
+        "exit": "If already past: end"
+      },
+      "timeout": "Gives up after {{d}}",
+      "conditions": "Conditions: {{count}}",
+      "connect": "Connect a step",
+      "onePer": "One run per {{key}}",
+      "namePlaceholder": "Journey name",
+      "unsaved": "Not saved yet",
+      "unsavedChanges": "Unsaved changes",
+      "saved": "Saved {{when}}",
+      "problems": "Problems: {{count}}",
+      "valid": "Ready",
+      "activities": "Activities",
+      "groups": {
+        "messages": "Messages",
+        "flow": "Flow",
+        "actions": "Actions"
+      },
+      "items": {
+        "email": "Email",
+        "sms": "SMS",
+        "wait": "Wait",
+        "wait_until": "Wait until event time",
+        "wait_for_event": "Wait for event",
+        "split": "Yes / no split",
+        "update": "Update profile"
+      },
+      "paletteHint": "Drag an activity onto the canvas, or click it to add it after the selected step. Connect steps by dragging from a dot to the next step.",
+      "readOnlyHint": "Pause the journey to change its steps. You can still arrange the canvas.",
+      "inspector": "Step settings",
+      "triggerSettings": "Entry and exit",
+      "tabs": {
+        "checks": "Checks",
+        "test": "Test run",
+        "runs": "Runs"
+      },
+      "checksHint": "Select a step on the canvas to edit it, or the trigger to change entry and exit rules.",
+      "fixFirst": "Fix the problems in Checks to try a test run."
+    },
+    "unitOne": {
+      "days": "day",
+      "hours": "hour",
+      "minutes": "minute"
     }
   },
   "reports": {

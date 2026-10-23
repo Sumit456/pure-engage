@@ -117,7 +117,7 @@ export interface JourneyStats {
   steps: Record<string, Record<string, number>>;
   messages: { total: number; sent: number };
 }
-export interface Journey { id: string; name: string; description: string; status: JourneyStatus; definition: JourneyDefinition; trigger_event: string; created_at: string; updated_at: string; activated_at: string | null; stats: JourneyStats }
+export interface Journey { id: string; name: string; description: string; status: JourneyStatus; definition: JourneyDefinition; layout?: Record<string, { x: number; y: number }>; trigger_event: string; created_at: string; updated_at: string; activated_at: string | null; stats: JourneyStats }
 export interface JourneyDetail extends Journey { problems: { step?: string; message: string }[] }
 export interface JourneyRun {
   id: string; contact_id: string; external_id: string | null; first_name: string | null; last_name: string | null; status: 'active' | 'completed' | 'exited';

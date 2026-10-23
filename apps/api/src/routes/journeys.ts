@@ -5,6 +5,8 @@ import { audit } from '../services/audit.ts';
 
 const idParam = z.object({ id: z.string().uuid() });
 const body = (b: unknown) => (b && typeof b === 'object' ? (b as Record<string, unknown>) : {});
+const point = z.object({ x: z.number().finite().min(-100_000).max(100_000), y: z.number().finite().min(-100_000).max(100_000) });
+const layoutSchema = z.object({ layout: z.record(z.string().regex(/^[a-z0-9_-]{1,40}$/i), point).refine((l) => Object.keys(l).length <= 60, 'Too many positions') });
 const simulateSchema = z.object({
   definition: z.unknown(),
   contact_id: z.string().uuid().optional(),
@@ -27,6 +29,8 @@ export const journeyRoutes: FastifyPluginAsync = async (app) => {
   });
   app.get('/api/journeys/:id', viewer, async (req) => journeys.detail(idParam.parse(req.params).id));
   app.put('/api/journeys/:id', marketer, async (req) => journeys.update(idParam.parse(req.params).id, body(req.body), actorOf(req)));
+  // Positions only, so it's allowed in any status (moving boxes on a running journey changes nothing it does).
+  app.put('/api/journeys/:id/layout', marketer, async (req) => journeys.saveLayout(idParam.parse(req.params).id, layoutSchema.parse(req.body).layout));
   app.post('/api/journeys/:id/activate', marketer, async (req) => journeys.activate(idParam.parse(req.params).id, actorOf(req)));
   app.post('/api/journeys/:id/pause', marketer, async (req) => journeys.pause(idParam.parse(req.params).id, actorOf(req)));
   app.delete('/api/journeys/:id', marketer, async (req, reply) => { await journeys.archive(idParam.parse(req.params).id, actorOf(req)); return reply.code(204).send(); });
