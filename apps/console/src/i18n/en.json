@@ -59,7 +59,15 @@
       "clickRate": "{{rate}} clicked",
       "activeRuns": "Journey runs in progress",
       "campaigns": "Campaigns sent, last {{days}} days"
-    }
+    },
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "subtitle": "Here's how member engagement is going.",
+    "recentCampaigns": "Recent campaigns",
+    "viewAll": "View all",
+    "campaignLine": "{{sent}} sent · {{opened}} opened",
+    "journeyLine": "{{active}} in progress · {{completed}} completed"
   },
   "contacts": {
     "new": "New contact",
@@ -74,7 +82,7 @@
     "profile": "Profile",
     "attributes": "Attributes",
     "noAttributes": "No custom attributes.",
-    "recentActivity": "Recent activity",
+    "recentActivity": "Events",
     "noActivity": "No activity yet.",
     "deleteTitle": "Delete contact?",
     "deleteWarning": "This permanently deletes {{name}} with their events and consent history. This can't be undone.",
@@ -91,7 +99,8 @@
       "updated_at": "Updated"
     },
     "journeys": "Journeys",
-    "noJourneys": "Not in any journeys."
+    "noJourneys": "Not in any journeys.",
+    "timeline": "Activity timeline"
   },
   "consent": {
     "title": "Consent",
@@ -509,5 +518,69 @@
     "action": "Action",
     "entity": "Record",
     "details": "Details"
+  },
+  "shell": {
+    "org": "Member engagement · UAE",
+    "groups": {
+      "audience": "Audience",
+      "engage": "Engage",
+      "insights": "Insights"
+    },
+    "noteSandbox": "Sandbox: messages are recorded, never sent.",
+    "noteLive": "Live sending. Consent and the allowlist are always checked.",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "userMenu": "Account menu",
+    "lightMode": "Switch to light mode",
+    "darkMode": "Switch to dark mode",
+    "search": "Search or jump to…",
+    "searchPlaceholder": "Search pages, actions and contacts",
+    "badge": {
+      "sandbox": "Sandbox",
+      "live": "Live",
+      "liveAllowlist": "Live · allowlist on"
+    },
+    "palette": {
+      "actions": "Quick actions",
+      "pages": "Go to",
+      "noResults": "No results",
+      "importContacts": "Import contacts",
+      "newCampaign": "New campaign",
+      "newJourney": "New journey",
+      "newTemplate": "New template"
+    }
+  },
+  "activity": {
+    "title": "Live activity",
+    "live": "Live",
+    "filter": "Filter activity",
+    "empty": "No activity yet.",
+    "kinds": {
+      "message": "Messages",
+      "consent": "Consent",
+      "journey": "Journeys",
+      "event": "Events"
+    },
+    "types": {
+      "message": {
+        "sent": "{{channel}} sent · {{template}}",
+        "delivered": "Delivered",
+        "open": "Opened an email",
+        "click": "Clicked a link",
+        "failed": "Delivery failed",
+        "unsubscribe": "Unsubscribed",
+        "retry": "Delivery retried"
+      },
+      "journey": {
+        "entered": "Entered {{journey}}",
+        "completed": "Completed {{journey}}",
+        "exited": "Left {{journey}}"
+      }
+    },
+    "consent": "{{channel}} {{purpose}} consent: {{status}}",
+    "event": "Event: {{name}}",
+    "via": "via {{source}}"
   }
 }

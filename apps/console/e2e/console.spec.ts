@@ -51,8 +51,9 @@ test('admin signs in, adds a member, records consent and works in Arabic', async
   if (shots) await page.screenshot({ path: `${shots}/contacts-ar.png`, fullPage: true });
   await page.getByLabel('اللغة').selectOption('en');
 
-  // Sign out
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  // Sign out (from the account menu)
+  await page.getByRole('button', { name: 'Account menu' }).click();
+  await page.getByRole('menuitem', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/login$/);
   await page.goto('/contacts');
   await expect(page).toHaveURL(/\/login$/);

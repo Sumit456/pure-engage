@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Mail, Phone } from 'lucide-react';
+import { Initials } from '../../components/bits.tsx';
+import { ActivityFeed } from '../../components/ActivityFeed.tsx';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -44,13 +47,26 @@ export function ContactDetailPage() {
       <div className="pe-page-header">
         <Link to="/contacts" className="pe-muted">{t('contacts.backToList')}</Link>
       </div>
-      <div className="pe-page-header">
-        <h1>{displayName(c)}</h1>
-        {c.external_id && <Badge tone="brand"><Ltr>{c.external_id}</Ltr></Badge>}
-        <span className="pe-spacer" />
-        {hasRole(user, 'marketer') && <Button onClick={() => setEditing(true)}>{t('common.edit')}</Button>}
-        {hasRole(user, 'admin') && <Button variant="danger" onClick={() => setConfirmDelete(true)}>{t('common.delete')}</Button>}
+      <div className="pe-hero pe-contact-hero">
+        <div className="pe-row" style={{ gap: 16, flexWrap: 'nowrap', minWidth: 0 }}>
+          <Initials name={displayName(c)} size="lg" />
+          <div style={{ minWidth: 0 }}>
+            <div className="pe-row" style={{ gap: 10 }}>
+              <h1 style={{ margin: 0 }}>{displayName(c)}</h1>
+              {c.external_id && <Badge tone="brand"><Ltr>{c.external_id}</Ltr></Badge>}
+            </div>
+            <div className="pe-row pe-muted" style={{ gap: 14, marginBlockStart: 4, fontSize: '0.88rem' }}>
+              {c.email && <span className="pe-row" style={{ gap: 6 }}><Mail aria-hidden="true" width={15} /><Ltr>{c.email}</Ltr></span>}
+              {c.phone && <span className="pe-row" style={{ gap: 6 }}><Phone aria-hidden="true" width={15} /><Ltr>{c.phone}</Ltr></span>}
+            </div>
+          </div>
+        </div>
+        <div className="pe-row">
+          {hasRole(user, 'marketer') && <Button onClick={() => setEditing(true)}>{t('common.edit')}</Button>}
+          {hasRole(user, 'admin') && <Button variant="danger" onClick={() => setConfirmDelete(true)}>{t('common.delete')}</Button>}
+        </div>
       </div>
+      <div style={{ blockSize: 16 }} />
 
       <div className="pe-grid-2">
         <div className="pe-card pe-stack">
@@ -87,6 +103,11 @@ export function ContactDetailPage() {
             </ul>
           ) : <p className="pe-muted">{t('consent.noHistory')}</p>}
         </div>
+      </div>
+
+      <div className="pe-card pe-stack" style={{ marginBlockStart: 16 }}>
+        <h2>{t('contacts.timeline')}</h2>
+        <ActivityFeed contactId={c.id} limit={20} showContact={false} />
       </div>
 
       <div className="pe-card pe-stack" style={{ marginBlockStart: 16 }}>

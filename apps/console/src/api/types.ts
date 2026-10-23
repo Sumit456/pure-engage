@@ -143,3 +143,13 @@ export interface WebhookDelivery { id: string; event_name: string; status: 'pend
 export interface ApiKey { id: string; name: string; prefix: string; created_at: string; last_used_at: string | null; revoked_at: string | null }
 export interface AdminUser extends User { active: boolean; created_at: string; last_login_at: string | null }
 export interface AuditEntry { id: string; at: string; actor_type: string; actor_id: string | null; action: string; entity_type: string | null; entity_id: string | null; details: Record<string, unknown> }
+
+export type ActivityKind = 'message' | 'consent' | 'journey' | 'event';
+export interface ActivityItem {
+  id: string;
+  kind: ActivityKind;
+  type: string;
+  at: string;
+  contact: { id: string; name: string | null; external_id: string | null } | null;
+  data: Record<string, string | null | undefined>;
+}

@@ -15,6 +15,7 @@ import { createJourneysService } from './journeys.ts';
 import { createWebhooksService } from './webhooks.ts';
 import { createReportsService } from './reports.ts';
 import { createRetentionService } from './retention.ts';
+import { createActivityService } from './activity.ts';
 
 export interface ServiceOptions {
   clock?: () => Date;
@@ -36,6 +37,7 @@ export function createServices(db: DB, config: Config, { clock = () => new Date(
   const journeys = createJourneysService({ db, contacts, templates, segments, delivery, clock, eventHooks: [(e) => webhooks.enqueueForEvent(e)], ...(log ? { log } : {}) });
   const reports = createReportsService(db, config, clock);
   const retention = createRetentionService(db, config, clock);
+  const activity = createActivityService(db);
   const worker = createWorker([
     { name: 'journey-events', run: () => journeys.processEvents() },
     { name: 'journey-steps', run: () => journeys.runDue() },
@@ -44,7 +46,7 @@ export function createServices(db: DB, config: Config, { clock = () => new Date(
     { name: 'webhooks', run: () => webhooks.dispatchDue() },
     { name: 'retention', run: () => retention.runIfDue() },
   ], log);
-  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, journeys, webhooks, reports, retention, worker };
+  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, journeys, webhooks, reports, retention, activity, worker };
 }
 
 export type Services = ReturnType<typeof createServices>;

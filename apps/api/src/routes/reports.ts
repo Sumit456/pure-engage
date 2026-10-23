@@ -2,8 +2,15 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { requireUser } from '../plugins/auth.ts';
 import { localDate, parseRange, toCsv } from '../services/reports.ts';
+import { ACTIVITY_KINDS } from '../services/activity.ts';
 
 const rangeQuery = z.object({ from: z.string().optional(), to: z.string().optional() });
+const activityQuery = z.object({
+  kinds: z.string().optional().transform((s) => s?.split(',').filter(Boolean)).pipe(z.array(z.enum(ACTIVITY_KINDS)).optional()),
+  contact_id: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  cursor: z.string().max(200).optional(),
+});
 
 export const reportRoutes: FastifyPluginAsync = async (app) => {
   const { reports } = app.services;
@@ -21,6 +28,12 @@ export const reportRoutes: FastifyPluginAsync = async (app) => {
   });
   app.get('/api/reports/campaigns', viewer, async (req) => ({ data: await reports.campaigns(range(req.query)) }));
   app.get('/api/reports/journeys', viewer, async () => ({ data: await reports.journeys() }));
+
+  // Activity across messages, consent, journeys and events (identifiers and labels only; no bodies or properties).
+  app.get('/api/activity', viewer, async (req) => {
+    const q = activityQuery.parse(req.query);
+    return app.services.activity.list({ kinds: q.kinds, contactId: q.contact_id, limit: q.limit, cursor: q.cursor });
+  });
 
   app.get('/api/reports/messages.csv', viewer, async (req, reply) => {
     const r = range(req.query);

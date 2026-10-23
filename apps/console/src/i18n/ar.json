@@ -59,7 +59,15 @@
       "clickRate": "نُقر على {{rate}}",
       "activeRuns": "رحلات قيد التنفيذ",
       "campaigns": "الحملات المرسلة، آخر {{days}} يومًا"
-    }
+    },
+    "morning": "صباح الخير",
+    "afternoon": "مساء الخير",
+    "evening": "مساء الخير",
+    "subtitle": "إليك أداء التفاعل مع الأعضاء.",
+    "recentCampaigns": "أحدث الحملات",
+    "viewAll": "عرض الكل",
+    "campaignLine": "{{sent}} مُرسلة · {{opened}} مفتوحة",
+    "journeyLine": "{{active}} قيد التنفيذ · {{completed}} مكتملة"
   },
   "contacts": {
     "new": "جهة اتصال جديدة",
@@ -74,7 +82,7 @@
     "profile": "الملف الشخصي",
     "attributes": "السمات",
     "noAttributes": "لا توجد سمات مخصصة.",
-    "recentActivity": "النشاط الأخير",
+    "recentActivity": "الأحداث",
     "noActivity": "لا يوجد نشاط بعد.",
     "deleteTitle": "حذف جهة الاتصال؟",
     "deleteWarning": "سيؤدي هذا إلى حذف {{name}} نهائيًا مع أحداثه وسجل موافقاته. لا يمكن التراجع عن ذلك.",
@@ -91,7 +99,8 @@
       "updated_at": "آخر تحديث"
     },
     "journeys": "الرحلات",
-    "noJourneys": "غير مشترك في أي رحلة."
+    "noJourneys": "غير مشترك في أي رحلة.",
+    "timeline": "سجل النشاط"
   },
   "consent": {
     "title": "الموافقة",
@@ -509,5 +518,69 @@
     "action": "الإجراء",
     "entity": "السجل",
     "details": "التفاصيل"
+  },
+  "shell": {
+    "org": "تفاعل الأعضاء · الإمارات",
+    "groups": {
+      "audience": "الجمهور",
+      "engage": "التفاعل",
+      "insights": "الرؤى"
+    },
+    "noteSandbox": "وضع التجربة: تُسجَّل الرسائل ولا تُرسَل.",
+    "noteLive": "إرسال فعلي. تُفحص الموافقة وقائمة السماح دائمًا.",
+    "collapse": "طي الشريط الجانبي",
+    "expand": "توسيع الشريط الجانبي",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة",
+    "userMenu": "قائمة الحساب",
+    "lightMode": "التبديل إلى الوضع الفاتح",
+    "darkMode": "التبديل إلى الوضع الداكن",
+    "search": "ابحث أو انتقل إلى…",
+    "searchPlaceholder": "ابحث في الصفحات والإجراءات وجهات الاتصال",
+    "badge": {
+      "sandbox": "وضع التجربة",
+      "live": "مباشر",
+      "liveAllowlist": "مباشر · قائمة السماح مفعّلة"
+    },
+    "palette": {
+      "actions": "إجراءات سريعة",
+      "pages": "انتقل إلى",
+      "noResults": "لا توجد نتائج",
+      "importContacts": "استيراد جهات الاتصال",
+      "newCampaign": "حملة جديدة",
+      "newJourney": "رحلة جديدة",
+      "newTemplate": "قالب جديد"
+    }
+  },
+  "activity": {
+    "title": "النشاط المباشر",
+    "live": "مباشر",
+    "filter": "تصفية النشاط",
+    "empty": "لا يوجد نشاط بعد.",
+    "kinds": {
+      "message": "الرسائل",
+      "consent": "الموافقة",
+      "journey": "الرحلات",
+      "event": "الأحداث"
+    },
+    "types": {
+      "message": {
+        "sent": "أُرسل {{channel}} · {{template}}",
+        "delivered": "تم التسليم",
+        "open": "فتح بريدًا إلكترونيًا",
+        "click": "نقر على رابط",
+        "failed": "فشل التسليم",
+        "unsubscribe": "ألغى الاشتراك",
+        "retry": "إعادة محاولة التسليم"
+      },
+      "journey": {
+        "entered": "دخل {{journey}}",
+        "completed": "أكمل {{journey}}",
+        "exited": "غادر {{journey}}"
+      }
+    },
+    "consent": "موافقة {{channel}} ({{purpose}}): {{status}}",
+    "event": "حدث: {{name}}",
+    "via": "عبر {{source}}"
   }
 }
