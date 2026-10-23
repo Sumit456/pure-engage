@@ -5,7 +5,10 @@ import { notFound } from '../errors.ts';
 import { audit, type Actor } from './audit.ts';
 import { validateContent } from './rendering.ts';
 
-const emailPart = z.object({ subject: z.string().trim().min(1).max(300), html: z.string().min(1).max(500_000), text: z.string().max(200_000).optional() });
+// `design` is the visual builder's block list; the builder turns it into `html`, which is what gets rendered and sent.
+const design = z.object({ version: z.literal(1), blocks: z.array(z.record(z.unknown())).max(100) }).passthrough()
+  .refine((d) => JSON.stringify(d).length <= 200_000, 'design is too large');
+const emailPart = z.object({ subject: z.string().trim().min(1).max(300), html: z.string().min(1).max(500_000), text: z.string().max(200_000).optional(), design: design.optional() });
 const smsPart = z.object({ body: z.string().trim().min(1).max(1600) });
 
 export const templateInputSchema = z.discriminatedUnion('channel', [

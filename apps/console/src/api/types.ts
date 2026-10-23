@@ -47,7 +47,7 @@ export interface Page<T> { data: T[]; next_cursor: string | null }
 
 export type Channel = 'email' | 'sms';
 export type Purpose = 'care' | 'marketing';
-export interface EmailPart { subject: string; html: string; text?: string }
+export interface EmailPart { subject: string; html: string; text?: string; design?: import('@pure-engage/shared').EmailDesign }
 export interface SmsPart { body: string }
 export interface TemplateContent { en: EmailPart | SmsPart; ar?: EmailPart | SmsPart }
 

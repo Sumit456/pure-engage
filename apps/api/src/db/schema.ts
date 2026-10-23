@@ -100,7 +100,7 @@ export type TemplateChannel = 'email' | 'sms';
 export type MessagePurpose = 'care' | 'marketing';
 export type Locale = 'en' | 'ar';
 
-export interface EmailContent { subject: string; html: string; text?: string | undefined }
+export interface EmailContent { subject: string; html: string; text?: string | undefined; design?: Record<string, unknown> | undefined }
 export interface SmsContent { body: string }
 /** One entry per locale; `en` is required, `ar` optional (falls back to `en`). */
 export type TemplateContent = { en: EmailContent | SmsContent; ar?: EmailContent | SmsContent | undefined };
@@ -247,6 +247,19 @@ export interface JourneyStepLogTable {
   at: Timestamp;
 }
 
+export interface AssetsTable {
+  id: Generated<string>;
+  name: string;
+  content_type: 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp';
+  size: number;
+  sha256: string;
+  width: number | null;
+  height: number | null;
+  data: Buffer;
+  created_by: string | null;
+  created_at: Timestamp;
+}
+
 export interface WebhooksTable {
   id: Generated<string>;
   name: string;
@@ -293,6 +306,7 @@ export interface Database {
   journey_enrollments: JourneyEnrollmentsTable;
   journey_step_log: JourneyStepLogTable;
   webhooks: WebhooksTable;
+  assets: AssetsTable;
   webhook_deliveries: WebhookDeliveriesTable;
 }
 

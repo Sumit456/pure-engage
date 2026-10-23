@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { smsInfo } from '@pure-engage/shared';
+import { renderEmailDesign, smsInfo, starterDesign, type EmailDesign } from '@pure-engage/shared';
+import { Code2, LayoutTemplate } from 'lucide-react';
+import { EmailDesigner } from './EmailDesigner.tsx';
 import { api, ApiError } from '../../api/client.ts';
 import type { Channel, Contact, EmailPart, Purpose, SmsPart, TemplateContent, TemplateDetail, TemplateVersion } from '../../api/types.ts';
 import { hasRole, useUser } from '../../auth/auth.tsx';
@@ -13,13 +15,18 @@ type Locale = 'en' | 'ar';
 interface Draft { name: string; description: string; channel: Channel; purpose: Purpose; content: Record<Locale, EmailPart & SmsPart> }
 
 const blankPart = (): EmailPart & SmsPart => ({ subject: '', html: '', text: '', body: '' });
+const dirOf = (l: Locale) => (l === 'ar' ? 'rtl' : 'ltr');
+/** A new email template starts in the designer with a ready-made layout. */
+const designedPart = (l: Locale, design: EmailDesign = starterDesign()) => ({ ...blankPart(), design, html: renderEmailDesign(design, { dir: dirOf(l) }) });
 const toDraft = (t?: TemplateDetail): Draft => ({
   name: t?.name ?? '', description: t?.description ?? '', channel: t?.channel ?? 'email', purpose: t?.purpose ?? 'care',
-  content: { en: { ...blankPart(), ...(t?.content.en ?? {}) }, ar: { ...blankPart(), ...(t?.content.ar ?? {}) } },
+  content: t
+    ? { en: { ...blankPart(), ...(t.content.en ?? {}) }, ar: { ...blankPart(), ...(t.content.ar ?? {}) } }
+    : { en: designedPart('en'), ar: blankPart() },
 });
 /** Only the fields for the channel; Arabic is omitted when left empty. */
 function toContent(d: Draft): TemplateContent {
-  const part = (p: EmailPart & SmsPart) => (d.channel === 'sms' ? { body: p.body } : { subject: p.subject, html: p.html, ...(p.text?.trim() ? { text: p.text } : {}) });
+  const part = (p: EmailPart & SmsPart) => (d.channel === 'sms' ? { body: p.body } : { subject: p.subject, html: p.html, ...(p.text?.trim() ? { text: p.text } : {}), ...(p.design ? { design: p.design } : {}) });
   const arEmpty = d.channel === 'sms' ? !d.content.ar.body.trim() : !d.content.ar.subject.trim() && !d.content.ar.html.trim();
   return { en: part(d.content.en), ...(arEmpty ? {} : { ar: part(d.content.ar) }) };
 }
@@ -50,6 +57,10 @@ export function TemplateEditorPage() {
 
   const part = draft.content[locale];
   const setPart = (patch: Partial<EmailPart & SmsPart>) => setDraft({ ...draft, content: { ...draft.content, [locale]: { ...part, ...patch } } });
+  const designing = draft.channel === 'email' && !!part.design;
+  const setDesign = (d: EmailDesign) => setPart({ design: d, html: renderEmailDesign(d, { dir: dirOf(locale) }) });
+  // Editing the HTML by hand detaches it from the design (the design can't represent arbitrary HTML).
+  const setHtml = (html: string) => { const { design: _detached, ...rest } = part; setDraft({ ...draft, content: { ...draft.content, [locale]: { ...rest, html } } }); };
 
   const save = useMutation({
     mutationFn: () => isNew
@@ -110,7 +121,7 @@ export function TemplateEditorPage() {
         </div>
         <p className="pe-muted">{draft.purpose === 'care' ? t('templates.purposeCare') : t('templates.purposeMarketing')}</p>
 
-        <div className="pe-grid-2">
+        <div className={designing ? 'pe-stack' : 'pe-grid-2'}>
           <div className="pe-card pe-stack">
             <div className="pe-tabs" role="tablist" aria-label={t('templates.language')}>
               {(['en', 'ar'] as const).map((l) => (
@@ -119,12 +130,27 @@ export function TemplateEditorPage() {
                 </button>
               ))}
             </div>
-            {draft.channel === 'email' ? (
+            {draft.channel === 'email' && (
+              <div className="pe-row">
+                <div className="pe-tabs" role="tablist" aria-label={t('designer.mode')}>
+                  <button type="button" role="tab" aria-selected={designing} className="pe-tab" disabled={!canEdit && !designing} onClick={() => !designing && setDesign(part.html.trim() && locale === 'ar' && draft.content.en.design ? draft.content.en.design : starterDesign())}><LayoutTemplate aria-hidden="true" width={15} /> {t('designer.designer')}</button>
+                  <button type="button" role="tab" aria-selected={!designing} className="pe-tab" onClick={() => designing && setHtml(part.html)}><Code2 aria-hidden="true" width={15} /> {t('designer.html')}</button>
+                </div>
+                {!designing && part.html.trim() !== '' && canEdit && <small className="pe-muted">{t('designer.htmlNote')}</small>}
+                {locale === 'ar' && !part.subject && !part.html && draft.content.en.design && canEdit && (
+                  <Button variant="ghost" onClick={() => setDraft({ ...draft, content: { ...draft.content, ar: { ...designedPart('ar', draft.content.en.design!), subject: draft.content.en.subject } } })}>{t('designer.copyEnglish')}</Button>
+                )}
+              </div>
+            )}
+            {designing && <TextField label={t('templates.field.subject')} dir={locale === 'ar' ? 'rtl' : 'ltr'} value={part.subject} disabled={!canEdit} error={fieldErrors[`content.${locale}.subject`]} onChange={(e) => setPart({ subject: e.target.value })} />}
+            {designing && part.design ? (
+              <EmailDesigner design={part.design} dir={dirOf(locale)} readOnly={!canEdit} onChange={setDesign} />
+            ) : draft.channel === 'email' ? (
               <>
                 <TextField label={t('templates.field.subject')} dir={locale === 'ar' ? 'rtl' : 'ltr'} value={part.subject} disabled={!canEdit} error={fieldErrors[`content.${locale}.subject`]} onChange={(e) => setPart({ subject: e.target.value })} />
                 <div className="pe-field">
                   <label htmlFor={`html-${locale}`}>{t('templates.field.html')}</label>
-                  <textarea id={`html-${locale}`} className="pe-code" dir="ltr" rows={14} value={part.html} disabled={!canEdit} onChange={(e) => setPart({ html: e.target.value })} aria-invalid={fieldErrors[`content.${locale}.html`] ? true : undefined} />
+                  <textarea id={`html-${locale}`} className="pe-code" dir="ltr" rows={14} value={part.html} disabled={!canEdit} onChange={(e) => setHtml(e.target.value)} aria-invalid={fieldErrors[`content.${locale}.html`] ? true : undefined} />
                   {fieldErrors[`content.${locale}.html`] && <small className="pe-field__error">{fieldErrors[`content.${locale}.html`]}</small>}
                 </div>
                 <div className="pe-field">

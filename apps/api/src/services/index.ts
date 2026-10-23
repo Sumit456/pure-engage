@@ -17,6 +17,7 @@ import { createReportsService } from './reports.ts';
 import { createRetentionService } from './retention.ts';
 import { createActivityService } from './activity.ts';
 import { createContactImportService } from './contact-import.ts';
+import { createAssetsService } from './assets.ts';
 
 export interface ServiceOptions {
   clock?: () => Date;
@@ -40,6 +41,7 @@ export function createServices(db: DB, config: Config, { clock = () => new Date(
   const retention = createRetentionService(db, config, clock);
   const activity = createActivityService(db);
   const contactImport = createContactImportService(db, contacts);
+  const assets = createAssetsService(db);
   const worker = createWorker([
     { name: 'journey-events', run: () => journeys.processEvents() },
     { name: 'journey-steps', run: () => journeys.runDue() },
@@ -48,7 +50,7 @@ export function createServices(db: DB, config: Config, { clock = () => new Date(
     { name: 'webhooks', run: () => webhooks.dispatchDue() },
     { name: 'retention', run: () => retention.runIfDue() },
   ], log);
-  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, journeys, webhooks, reports, retention, activity, contactImport, worker };
+  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, journeys, webhooks, reports, retention, activity, contactImport, assets, worker };
 }
 
 export type Services = ReturnType<typeof createServices>;
