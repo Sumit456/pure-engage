@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { CornerDownLeft, LayoutTemplate, Megaphone, PenSquare, Search, User, Workflow, type LucideIcon } from 'lucide-react';
+import { CornerDownLeft, LayoutTemplate, Megaphone, Upload, PenSquare, Search, User, Workflow, type LucideIcon } from 'lucide-react';
 import { api } from '../api/client.ts';
 import type { CampaignSummary, Contact, Journey, Page, Template } from '../api/types.ts';
 import { NAV, NAV_ICONS, navPath } from './Shell.tsx';
@@ -60,6 +60,7 @@ export function CommandPalette() {
     const needle = q.trim().toLowerCase();
     const match = (s: string) => !needle || s.toLowerCase().includes(needle);
     const actions: Item[] = [
+      { id: 'a-import', group: t('shell.palette.actions'), label: t('shell.palette.importContacts'), icon: Upload, to: '/contacts/import' },
       { id: 'a-campaign', group: t('shell.palette.actions'), label: t('shell.palette.newCampaign'), icon: Megaphone, to: '/campaigns/new' },
       { id: 'a-journey', group: t('shell.palette.actions'), label: t('shell.palette.newJourney'), icon: Workflow, to: '/journeys/new' },
       { id: 'a-template', group: t('shell.palette.actions'), label: t('shell.palette.newTemplate'), icon: PenSquare, to: '/templates/new' },

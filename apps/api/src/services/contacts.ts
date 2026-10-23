@@ -155,6 +155,8 @@ export function createContactsService(db: Kysely<Database>) {
 
   return {
     findByRef: (ref: ContactRef) => findByRef(db, ref),
+    /** Validates a contact input exactly as a write would, without writing. Throws a 400 with field errors. */
+    check(input: ContactInput) { splitInput(input); },
 
     /** Create or update by contact_id → external_id → email. */
     upsert(input: ContactInput, opts: WriteOptions) {

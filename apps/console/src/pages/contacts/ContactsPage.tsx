@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Upload } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -56,6 +57,7 @@ export function ContactsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        {hasRole(user, 'marketer') && <Link className="pe-button" to="/contacts/import"><Upload aria-hidden="true" />{t('contacts.import.title')}</Link>}
         {hasRole(user, 'marketer') && <Button variant="primary" onClick={() => setCreating(true)}>{t('contacts.new')}</Button>}
       </div>
 

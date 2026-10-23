@@ -7,6 +7,7 @@ import { ComingSoon } from './pages/ComingSoon.tsx';
 import { Login } from './pages/Login.tsx';
 import { ContactsPage } from './pages/contacts/ContactsPage.tsx';
 import { ContactDetailPage } from './pages/contacts/ContactDetailPage.tsx';
+import { ContactImportPage } from './pages/contacts/ContactImportPage.tsx';
 import { TemplatesPage } from './pages/templates/TemplatesPage.tsx';
 import { TemplateEditorPage } from './pages/templates/TemplateEditorPage.tsx';
 import { MessagesPage } from './pages/messages/MessagesPage.tsx';
@@ -28,6 +29,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Dashboard /> },
       { path: 'contacts', element: <ContactsPage /> },
+      { path: 'contacts/import', element: <ContactImportPage /> },
       { path: 'contacts/:id', element: <ContactDetailPage /> },
       { path: 'templates', element: <TemplatesPage /> },
       { path: 'templates/:id', element: <TemplateEditorPage /> },

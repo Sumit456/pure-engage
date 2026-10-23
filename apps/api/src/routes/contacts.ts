@@ -10,6 +10,13 @@ const listQuery = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   cursor: z.string().max(500).optional(),
 });
+const importBody = z.object({
+  rows: z.array(z.record(z.unknown())).max(1000, 'Max 1000 rows per request'),
+  mode: z.string().optional(),
+  dry_run: z.boolean().default(false),
+  file_name: z.string().max(255).default('import'),
+  first_row: z.number().int().min(1).default(2),
+});
 const eventsQuery = z.object({ limit: z.coerce.number().int().min(1).max(200).default(50), before: z.string().datetime({ offset: true }).optional() });
 const body = (b: unknown) => {
   if (!b || typeof b !== 'object' || Array.isArray(b)) throw badRequest('Body must be a JSON object');
@@ -22,6 +29,14 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
   const marketer = { preHandler: requireUser('marketer') };
 
   app.get('/api/contacts', viewer, async (req) => contacts.list(listQuery.parse(req.query)));
+
+  // Spreadsheet import: the console parses and maps the file, then sends rows in chunks (dry run first).
+  app.post('/api/contacts/import', marketer, async (req) => {
+    const b = importBody.parse(req.body);
+    const { contactImport } = app.services;
+    return contactImport.run({ rows: b.rows, mode: contactImport.parseMode(b.mode), dryRun: b.dry_run, fileName: b.file_name, firstRow: b.first_row }, actorOf(req));
+  });
+  app.get('/api/contacts/imports', marketer, async () => ({ data: await app.services.contactImport.history() }));
 
   app.post('/api/contacts', marketer, async (req, reply) =>
     reply.code(201).send(await contacts.create(body(req.body), { source: 'console', actor: actorOf(req) })));

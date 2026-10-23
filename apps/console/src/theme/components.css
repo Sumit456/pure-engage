@@ -360,3 +360,40 @@ a.pe-button { text-decoration: none; }
   .pe-canvas { block-size: 70vh; }
   .pe-inspector { border-inline-start: 0; border-block-start: 1px solid var(--pe-border); }
 }
+
+/* ---- Contact import ---- */
+.pe-import { max-inline-size: 1040px; margin-inline: auto; }
+.pe-stepper { list-style: none; margin: 0 0 20px; padding: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.pe-stepper li { flex: 1; min-inline-size: 140px; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.9rem; color: var(--pe-text-muted); }
+.pe-stepper li::after { content: ''; flex: 1; block-size: 1px; background: var(--pe-border); }
+.pe-stepper li:last-child::after { display: none; }
+.pe-stepper li[data-state='done']::after { background: var(--pe-brand-600); }
+.pe-stepper li[data-state='current'] { color: var(--pe-text); }
+.pe-stepper__dot { inline-size: 32px; block-size: 32px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 0.8rem; font-weight: 800; border: 1px solid var(--pe-border); background: var(--pe-surface); }
+.pe-stepper__dot svg { inline-size: 16px; block-size: 16px; }
+.pe-stepper li[data-state='current'] .pe-stepper__dot { border-color: var(--pe-brand-600); background: var(--pe-brand-100); color: var(--pe-brand-600); }
+.pe-stepper li[data-state='done'] .pe-stepper__dot { border-color: var(--pe-brand-600); background: var(--pe-brand-600); color: var(--pe-on-brand); }
+
+.pe-dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 56px 24px; border: 2px dashed var(--pe-border); border-radius: var(--pe-radius-lg); cursor: pointer; transition: border-color 0.15s var(--pe-ease), background 0.15s var(--pe-ease); }
+.pe-dropzone:hover, .pe-dropzone:focus-within { border-color: color-mix(in oklab, var(--pe-brand-600) 50%, var(--pe-border)); background: var(--pe-bg); }
+.pe-dropzone[data-drag] { border-color: var(--pe-brand-600); background: var(--pe-brand-100); }
+.pe-dropzone__icon { inline-size: 56px; block-size: 56px; display: grid; place-items: center; border-radius: 18px; background: var(--pe-brand-100); color: var(--pe-brand-600); margin-block-end: 6px; }
+.pe-dropzone__icon[data-done] { background: var(--pe-success-soft); color: var(--pe-success); }
+.pe-dropzone__icon svg { inline-size: 26px; block-size: 26px; }
+.pe-filecard { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--pe-border); border-radius: var(--pe-radius); background: var(--pe-bg); animation: pe-feed-in 0.3s var(--pe-ease); }
+.pe-filecard > svg { inline-size: 22px; block-size: 22px; color: var(--pe-success); }
+.pe-callout { display: flex; gap: 8px; align-items: center; padding: 10px 14px; border-radius: var(--pe-radius-sm); background: var(--pe-brand-100); color: var(--pe-brand-600); font-weight: 600; font-size: 0.9rem; }
+.pe-callout svg { inline-size: 16px; block-size: 16px; flex: none; }
+.pe-select { font: inherit; padding: 6px 10px; border-radius: var(--pe-radius-sm); border: 1px solid var(--pe-border); background: var(--pe-surface); color: var(--pe-text); min-inline-size: 220px; max-inline-size: 100%; }
+.pe-choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.pe-choice { display: flex; gap: 10px; align-items: flex-start; padding: 14px; border: 1px solid var(--pe-border); border-radius: var(--pe-radius); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.pe-choice span { display: flex; flex-direction: column; gap: 2px; }
+.pe-choice[data-checked] { border-color: var(--pe-brand-600); background: var(--pe-brand-100); }
+.pe-choice input { margin-block-start: 3px; accent-color: var(--pe-brand-600); }
+.pe-warn-icon { color: var(--pe-warning); }
+.pe-import__done { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px 0; text-align: center; }
+.pe-import__done h2 { font-family: var(--pe-font-display); font-size: 1.5rem; font-weight: 600; margin: 0; }
+.pe-import__summary { inline-size: 100%; max-inline-size: 720px; margin-block-start: 8px; }
+.pe-import__nav { margin-block-start: 16px; }
+.pe-progress { inline-size: min(420px, 100%); block-size: 8px; border-radius: 999px; background: var(--pe-surface-muted); overflow: hidden; }
+.pe-progress span { display: block; block-size: 100%; background: var(--pe-brand-600); border-radius: inherit; transition: inline-size 0.3s var(--pe-ease); }
