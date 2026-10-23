@@ -44,6 +44,11 @@ const schema = z.object({
 
   // SMTP (email)
   PE_SMTP_URL: z.string().optional(),
+  // Or the same as separate settings (no URL encoding of the login): used when PE_SMTP_URL is not set.
+  PE_SMTP_HOST: z.string().optional(),
+  PE_SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(587),
+  PE_SMTP_USER: z.string().optional(),
+  PE_SMTP_PASS: z.string().optional(),
   PE_EMAIL_FROM: z.string().default('Pure Engage <no-reply@example.com>'),
   PE_EMAIL_REPLY_TO: z.string().optional(),
 

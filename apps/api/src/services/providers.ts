@@ -29,8 +29,25 @@ export const sandboxProvider: Provider = {
   async send(msg) { return { providerMessageId: `sandbox-${msg.id}` }; },
 };
 
+const SMTP_TIMEOUTS = { connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 20_000 };
+
+/** SMTP is configured by PE_SMTP_URL, or by PE_SMTP_HOST + PE_SMTP_PASS (with PE_SMTP_PORT and PE_SMTP_USER). */
+export const smtpConfigured = (config: Config) => !!(config.PE_SMTP_URL || (config.PE_SMTP_HOST && config.PE_SMTP_PASS));
+
+/** nodemailer transport options; port 465 is implicit TLS, other ports upgrade with STARTTLS. */
+export function smtpTransportOptions(config: Config) {
+  if (config.PE_SMTP_URL) return config.PE_SMTP_URL;
+  return {
+    host: config.PE_SMTP_HOST!,
+    port: config.PE_SMTP_PORT,
+    secure: config.PE_SMTP_PORT === 465,
+    auth: { user: config.PE_SMTP_USER ?? '', pass: config.PE_SMTP_PASS! },
+  };
+}
+
 export function smtpProvider(config: Config): Provider {
-  const transport = nodemailer.createTransport(config.PE_SMTP_URL!, { connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 20_000 });
+  const options = smtpTransportOptions(config);
+  const transport = typeof options === 'string' ? nodemailer.createTransport(options, SMTP_TIMEOUTS) : nodemailer.createTransport({ ...options, ...SMTP_TIMEOUTS });
   return {
     name: 'smtp',
     async send(msg) {
@@ -91,7 +108,7 @@ export function verifyTwilioSignature(authToken: string, url: string, params: Re
 export function selectProviders(config: Config): { email: Provider; sms: Provider } {
   const live = config.PE_DELIVERY_MODE === 'live';
   return {
-    email: live && config.PE_SMTP_URL ? smtpProvider(config) : sandboxProvider,
+    email: live && smtpConfigured(config) ? smtpProvider(config) : sandboxProvider,
     sms: live && config.TWILIO_ACCOUNT_SID && config.TWILIO_AUTH_TOKEN && (config.TWILIO_FROM || config.TWILIO_MESSAGING_SERVICE_SID) ? twilioProvider(config) : sandboxProvider,
   };
 }

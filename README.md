@@ -101,6 +101,11 @@ What you get:
 Free-plan limits: the service sleeps after 15 minutes idle, so the first visit takes about a minute. Scheduled
 sends and journey waits only run while it's awake. The free database expires after 30 days.
 
+To try real sends to your own inbox and phone, set `PE_DELIVERY_MODE=live` and `PE_DELIVERY_ALLOWLIST` (your
+address and number only). Then add the SMTP settings (`PE_SMTP_HOST`, `PE_SMTP_PORT`, `PE_SMTP_USER`,
+`PE_SMTP_PASS`) and the Twilio settings. Free Render instances may block ports 465 and 587; providers such as Brevo
+also accept 2525.
+
 **Don't load real member data here.** PureHealth data must be hosted in the UAE (A-018).
 
 Configuration lives in environment variables; see [`.env.example`](.env.example). Ground rules (no real data,

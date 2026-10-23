@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { seedDemo } from '../src/demo/seed.ts';
+import { selectProviders, smtpConfigured, smtpTransportOptions } from '../src/services/providers.ts';
 import { testApp, truncateAll } from './helpers.ts';
 
 let ctx: Awaited<ReturnType<typeof testApp>>;
@@ -39,6 +40,16 @@ test('PE_SECRET_KEY takes a 32-byte base64 key or any random string of 32+ chara
   expect(loadConfig({ PE_SECRET_KEY: generated }).secretKey).toEqual(loadConfig({ PE_SECRET_KEY: generated }).secretKey);
   expect(() => loadConfig({ PE_SECRET_KEY: 'too-short' })).toThrow(/at least 32/);
   expect(() => loadConfig({ PE_ADMIN_PASSWORD: 'short' })).toThrow(/PE_ADMIN_PASSWORD must be at least 12 characters/);
+});
+
+test('SMTP can be configured as one URL or as host, port, user and password', () => {
+  const parts = loadConfig({ PE_SMTP_HOST: 'smtp-relay.example.com', PE_SMTP_PORT: '2525', PE_SMTP_USER: 'login@smtp.example.com', PE_SMTP_PASS: 'smtp-key-for-tests' });
+  expect(smtpConfigured(parts)).toBe(true);
+  expect(smtpTransportOptions(parts)).toEqual({ host: 'smtp-relay.example.com', port: 2525, secure: false, auth: { user: 'login@smtp.example.com', pass: 'smtp-key-for-tests' } });
+  expect(smtpTransportOptions(loadConfig({ PE_SMTP_HOST: 'h.example.com', PE_SMTP_PORT: '465', PE_SMTP_PASS: 'x' }))).toMatchObject({ secure: true });
+  expect(selectProviders(loadConfig({ PE_DELIVERY_MODE: 'live', PE_SMTP_HOST: 'h.example.com', PE_SMTP_PASS: 'x' })).email.name).toBe('smtp');
+  expect(selectProviders(loadConfig({ PE_DELIVERY_MODE: 'live', PE_SMTP_HOST: 'h.example.com' })).email.name).toBe('sandbox'); // no password yet
+  expect(smtpTransportOptions(loadConfig({ PE_SMTP_URL: 'smtp://u:p@a.example.com:25', PE_SMTP_HOST: 'b.example.com', PE_SMTP_PASS: 'x' }))).toBe('smtp://u:p@a.example.com:25');
 });
 
 test('on Render, the public URL defaults to RENDER_EXTERNAL_URL', () => {
