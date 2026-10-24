@@ -70,8 +70,9 @@ test('Salesforce: set up the Connected App, connect with PKCE, map fields, sync,
   // The background worker may already have run the first pull, so only check that a run was recorded.
   await expect(page.getByTestId('sf-counts-Contact')).toBeVisible();
   await expect(page.getByTestId('sf-last-sync')).not.toHaveText('Not yet');
-  await expect(page.getByRole('row').filter({ hasText: 'SYNC salesforce pull Contact' })).toContainText('200');
-  await expect(page.getByRole('row').filter({ hasText: 'POST salesforce oauth token' })).toBeVisible();
+  // The scheduled worker may also have synced by now, so there can be more than one pull row.
+  await expect(page.getByRole('row').filter({ hasText: 'SYNC salesforce pull Contact' }).first()).toContainText('200');
+  await expect(page.getByRole('row').filter({ hasText: 'POST salesforce oauth token' }).first()).toBeVisible();
   await page.getByRole('tab', { name: /Pending/ }).click();
   await expect(page.getByText('Nothing here')).toBeVisible();
   if (shots) await page.screenshot({ path: `${shots}/integrations-salesforce.png`, fullPage: true });
