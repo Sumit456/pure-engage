@@ -16,10 +16,11 @@ test('build a bilingual SMS template, send it through the API and follow it in t
   await expect(page.getByRole('status').filter({ hasText: 'Sandbox mode' })).toBeVisible();
 
   // Template editor with live preview and SMS segment counter.
-  await page.getByRole('navigation').getByRole('link', { name: 'Templates' }).click();
-  await page.getByRole('link', { name: 'New template' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Content' }).click();
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: /^SMS/ }).click();
   await page.getByLabel('Name', { exact: true }).fill('Appointment reminder (SMS)');
-  await page.getByLabel('Channel').selectOption('sms');
+  await expect(page.getByLabel('Channel')).toHaveValue('sms');
   await page.getByLabel('Message', { exact: true }).fill('Hi {{ contact.first_name }}, your appointment is on {{ data.date }}. Reply STOP to opt out.');
   await expect(page.getByTestId('sms-counter')).toContainText('GSM-7');
   await expect(page.locator('.pe-sms-bubble')).toContainText('Hi Test, your appointment is on 12 January 2026, 9:30.');

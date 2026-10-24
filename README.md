@@ -17,7 +17,7 @@ and email/SMS delivery, and integrates with PureNet.
 | `packages/purenet-connector` | Provisional PureNet connector: OAuth, REST client, signed webhook receiver, mapping |
 | `packages/sdk` | `@pure-engage/sdk`: dependency-free JS client for the public API and webhook signatures |
 | `docs/contracts/` | OpenAPI/AsyncAPI contracts (every element labelled CONFIRMED or INFERRED) + `ASSUMPTIONS.md` |
-| `docs/adr/` | Decisions: 0001 repo location, 0002 contract-first mock, 0003 stack and layout, 0004 messaging and delivery, 0005 journeys, 0006 reporting, webhooks and operations, 0007 integrations and AI access (MCP) |
+| `docs/adr/` | Decisions: 0001 repo location, 0002 contract-first mock, 0003 stack and layout, 0004 messaging and delivery, 0005 journeys, 0006 reporting, webhooks and operations, 0007 integrations and AI access (MCP), 0008 content builder |
 | `docs/audit/orbit-audit.md` | Audit of `Sumit456/Orbit` (prior art only; no code reused) |
 | `mock/purenet/` | Prism mock of PureNet, smoke test, examples |
 | `scripts/` | `dev-db.sh` (local Postgres), `check-evidence.mjs`, `e2e-purenet.sh` |
@@ -40,6 +40,7 @@ npm run dev:console    # console on http://127.0.0.1:5173
 | Auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/password` | Session cookie (httpOnly) + `x-pe-csrf: 1` on writes; 30 min idle / 12 h max |
 | Contacts | `GET/POST /api/contacts`, `GET/PATCH/DELETE /api/contacts/:id`, `GET /api/contacts/:id/events` | viewer reads, marketer writes, admin deletes; every contact view is audited |
 | Admin | `/api/users`, `/api/api-keys`, `GET /api/audit` | admin |
+| Content | `GET /api/content`, `POST /api/content/move`, `/api/folders`, `/api/content-blocks`, `POST /api/assets/upload` (raw bytes), `GET/PATCH/DELETE /api/assets/:id`, `GET /api/assets/usage`; public files at `GET /a/:id` (ranges supported) | viewer reads, marketer writes |
 | Templates | `GET/POST /api/templates`, `GET/PUT/DELETE /api/templates/:id`, `…/versions`, `…/versions/:v/restore`, `POST /api/templates/preview` | viewer reads, marketer writes |
 | Segments | `GET/POST /api/segments`, `GET/PUT/DELETE /api/segments/:id`, `POST /api/segments/preview` | viewer reads, marketer writes |
 | Campaigns | `GET/POST /api/campaigns`, `GET/PUT /api/campaigns/:id`, `…/estimate`, `…/schedule`, `…/cancel`, `…/test` | viewer reads, marketer writes and sends |
@@ -54,6 +55,10 @@ npm run dev:console    # console on http://127.0.0.1:5173
 | Recipients | `GET /t/o/:token` (open), `GET /t/c/:token` (click), `GET/POST /u/:token` (unsubscribe, RFC 8058) | signed tokens |
 | Twilio | `POST /hooks/twilio/status` (receipts), `POST /hooks/twilio/inbound` (STOP opt-out) | `X-Twilio-Signature` |
 | PureNet | `POST /hooks/purenet` (only when `PURENET_WEBHOOK_SECRET` is set) | HMAC signature (A-011) |
+
+**Content** (console → Content): one library for emails, SMS, push and WhatsApp messages, reusable content blocks
+and files (images, PDF, video, audio, Office documents) in folders, with previews and drag-and-drop uploads. Push and
+WhatsApp are authored and previewed today; sending them needs their providers ([ADR-0008](docs/adr/0008-content-builder.md)).
 
 **Integrations** (console → Integrations): scoped API keys, inbound and outbound webhooks, Zapier/Make/n8n recipes,
 an API reference generated from the contract, and AI assistants. To connect Claude, add a custom connector with the

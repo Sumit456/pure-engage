@@ -45,11 +45,22 @@ export interface ContactDetail extends Contact {
 
 export interface Page<T> { data: T[]; next_cursor: string | null }
 
-export type Channel = 'email' | 'sms';
+/** Channels that can be sent today; push and WhatsApp are authored in Content and sent later. */
+export type SendChannel = 'email' | 'sms';
+export type Channel = SendChannel | 'push' | 'whatsapp';
+export const isSendable = (c: Channel): c is SendChannel => c === 'email' || c === 'sms';
 export type Purpose = 'care' | 'marketing';
 export interface EmailPart { subject: string; html: string; text?: string; design?: import('@pure-engage/shared').EmailDesign }
 export interface SmsPart { body: string }
-export interface TemplateContent { en: EmailPart | SmsPart; ar?: EmailPart | SmsPart }
+export interface PushPart { title: string; body: string; image_asset_id?: string; deep_link?: string; data?: Record<string, string> }
+export type WhatsAppButton = { type: 'quick_reply'; text: string } | { type: 'url'; text: string; url: string } | { type: 'call'; text: string; phone: string };
+export interface WhatsAppPart {
+  header: { type: 'none' | 'text' | 'image' | 'video' | 'document'; text?: string; asset_id?: string };
+  body: string; footer?: string; buttons: WhatsAppButton[];
+  category: 'marketing' | 'utility'; approval: 'draft' | 'submitted' | 'approved' | 'rejected';
+}
+export type ContentPart = EmailPart | SmsPart | PushPart | WhatsAppPart;
+export interface TemplateContent { en: ContentPart; ar?: ContentPart }
 
 export interface Template {
   id: string;
@@ -61,6 +72,8 @@ export interface Template {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+  folder_id: string | null;
+  tags: string[];
 }
 export interface TemplateDetail extends Template { content: TemplateContent }
 export interface TemplateVersion { version: number; created_at: string; created_by_email: string | null }
@@ -170,4 +183,21 @@ export interface ActivityItem {
   at: string;
   contact: { id: string; name: string | null; external_id: string | null } | null;
   data: Record<string, string | null | undefined>;
+}
+
+export type AssetKind = 'image' | 'document' | 'video' | 'audio';
+export interface Asset {
+  id: string; name: string; content_type: string; kind: AssetKind; size: number; width: number | null; height: number | null;
+  folder_id: string | null; tags: string[]; description: string; created_at: string; updated_at: string; url: string;
+}
+export interface AssetDetail extends Asset { used_in: { type: string; id: string; name: string }[] }
+export interface Folder { id: string; name: string; parent_id: string | null; created_at: string; items: number }
+export type ContentType = 'email' | 'sms' | 'push' | 'whatsapp' | 'block' | AssetKind;
+export interface ContentItem {
+  type: ContentType; id: string; name: string; folder_id: string | null; tags: string[]; updated_at: string;
+  purpose: string | null; content_type: string | null; size: number | null; width: number | null; height: number | null;
+}
+export interface ContentBlock {
+  id: string; name: string; kind: 'design' | 'html' | 'text'; folder_id: string | null; tags: string[]; updated_at: string;
+  content: { blocks?: import('@pure-engage/shared').EmailBlock[]; html?: string; text?: string };
 }

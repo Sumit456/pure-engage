@@ -20,6 +20,7 @@ import { createContactImportService } from './contact-import.ts';
 import { createAssetsService } from './assets.ts';
 import { createIntegrationsService } from './integrations.ts';
 import { createOAuthService } from './oauth.ts';
+import { createContentService } from './content.ts';
 
 export interface ServiceOptions {
   clock?: () => Date;
@@ -46,6 +47,7 @@ export function createServices(db: DB, config: Config, { clock = () => new Date(
   const assets = createAssetsService(db);
   const integrations = createIntegrationsService({ db, config, ingest, clock });
   const oauth = createOAuthService(db, clock);
+  const content = createContentService(db);
   const worker = createWorker([
     { name: 'journey-events', run: () => journeys.processEvents() },
     { name: 'journey-steps', run: () => journeys.runDue() },
@@ -54,7 +56,7 @@ export function createServices(db: DB, config: Config, { clock = () => new Date(
     { name: 'webhooks', run: () => webhooks.dispatchDue() },
     { name: 'retention', run: async () => { await retention.runIfDue(); await oauth.prune(); } },
   ], log);
-  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, journeys, webhooks, reports, retention, activity, contactImport, assets, integrations, oauth, worker };
+  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, journeys, webhooks, reports, retention, activity, contactImport, assets, integrations, oauth, content, worker };
 }
 
 export type Services = ReturnType<typeof createServices>;

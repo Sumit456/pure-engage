@@ -63,7 +63,8 @@ export function CommandPalette() {
       { id: 'a-import', group: t('shell.palette.actions'), label: t('shell.palette.importContacts'), icon: Upload, to: '/contacts/import' },
       { id: 'a-campaign', group: t('shell.palette.actions'), label: t('shell.palette.newCampaign'), icon: Megaphone, to: '/campaigns/new' },
       { id: 'a-journey', group: t('shell.palette.actions'), label: t('shell.palette.newJourney'), icon: Workflow, to: '/journeys/new' },
-      { id: 'a-template', group: t('shell.palette.actions'), label: t('shell.palette.newTemplate'), icon: PenSquare, to: '/templates/new' },
+      { id: 'a-template', group: t('shell.palette.actions'), label: t('shell.palette.newTemplate'), icon: PenSquare, to: '/content/email/new' },
+      { id: 'a-upload', group: t('shell.palette.actions'), label: t('shell.palette.uploadFiles'), icon: Upload, to: '/content?type=images' },
       { id: 'a-connect', group: t('shell.palette.actions'), label: t('shell.palette.connectApp'), icon: Plug, to: '/integrations/inbound/new' },
       { id: 'a-key', group: t('shell.palette.actions'), label: t('shell.palette.apiKeys'), icon: KeyRound, to: '/integrations/api' },
     ].filter((i) => match(i.label));
@@ -77,7 +78,7 @@ export function CommandPalette() {
     const things: Item[] = needle && n ? [
       ...n.campaigns.map((c) => ({ id: `cp-${c.id}`, group: t('nav.campaigns'), label: c.name, icon: Megaphone, to: `/campaigns/${c.id}` })),
       ...n.journeys.map((j) => ({ id: `j-${j.id}`, group: t('nav.journeys'), label: j.name, icon: Workflow, to: `/journeys/${j.id}` })),
-      ...n.templates.map((tp) => ({ id: `t-${tp.id}`, group: t('nav.templates'), label: tp.name, icon: LayoutTemplate, to: `/templates/${tp.id}` })),
+      ...n.templates.map((tp) => ({ id: `t-${tp.id}`, group: t('nav.content'), label: tp.name, icon: LayoutTemplate, to: `/content/${tp.channel}/${tp.id}` })),
     ].filter((i) => match(i.label)).slice(0, 12) : [];
     return [...actions, ...pages, ...things, ...people];
   }, [q, debounced, contacts.data, named.data, t]);

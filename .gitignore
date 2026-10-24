@@ -12,3 +12,6 @@ dist/
 *.tsbuildinfo
 playwright-report/
 test-results/
+
+# Local agent worktrees
+.claude/worktrees/

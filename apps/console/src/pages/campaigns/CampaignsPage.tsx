@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../api/client.ts';
-import type { CampaignDetail, CampaignEstimate, CampaignSummary, Contact, MessageSummary, Segment, Template } from '../../api/types.ts';
+import { isSendable, type CampaignDetail, type CampaignEstimate, type CampaignSummary, type Contact, type MessageSummary, type Segment, type Template } from '../../api/types.ts';
 import { hasRole, useUser } from '../../auth/auth.tsx';
 import { ContactPicker } from '../../components/ContactPicker.tsx';
 import { Badge, Button, Dialog, EmptyState, ErrorBanner, SelectField, Spinner, TextField, useFormatDate, type Tone } from '../../components/ui.tsx';
@@ -79,7 +79,7 @@ export function CampaignPage() {
     queryFn: ({ signal }) => api<CampaignDetail>(`/api/campaigns/${id}`, { signal }),
     refetchInterval: (q) => (q.state.data && ACTIVE.has(q.state.data.status) ? 3000 : false),
   });
-  const templates = useQuery({ queryKey: ['templates'], queryFn: ({ signal }) => api<{ data: Template[] }>('/api/templates', { signal }) });
+  const templates = useQuery({ queryKey: ['templates', 'sendable'], queryFn: ({ signal }) => api<{ data: Template[] }>('/api/templates', { signal }).then((r) => ({ data: r.data.filter((x) => isSendable(x.channel)) })) });
   const segments = useQuery({ queryKey: ['segments'], queryFn: ({ signal }) => api<{ data: Segment[] }>('/api/segments', { signal }) });
   const isDraft = isNew || campaign.data?.status === 'draft';
   const estimate = useQuery({ queryKey: ['campaign', id, 'estimate'], enabled: !isNew && isDraft, queryFn: ({ signal }) => api<CampaignEstimate>(`/api/campaigns/${id}/estimate`, { signal }) });

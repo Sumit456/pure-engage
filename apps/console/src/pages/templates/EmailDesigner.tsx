@@ -5,13 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowDown, ArrowUp, Columns2, Copy, Heading, ImageIcon, LayoutPanelTop, Minus, MousePointerClick, MoveVertical, PanelBottom,
-  Monitor, Palette, Smartphone, Trash2, Type, Upload, type LucideIcon,
+  BookmarkPlus, Blocks, Monitor, Palette, Smartphone, Trash2, Type, type LucideIcon,
 } from 'lucide-react';
 import { DEFAULT_DESIGN_STYLE, newBlock, newBlockId, type BlockAlign, type EmailBlock, type EmailBlockType, type EmailDesign } from '@pure-engage/shared';
 import { api } from '../../api/client.ts';
-import { Button, ErrorBanner } from '../../components/ui.tsx';
+import { Button, Dialog, ErrorBanner, TextField } from '../../components/ui.tsx';
+import { AssetPicker, localUrl } from '../../components/AssetPicker.tsx';
+import type { ContentBlock } from '../../api/types.ts';
 
-export interface Asset { id: string; name: string; content_type: string; size: number; width: number | null; height: number | null; url: string }
 
 const PALETTE: { type: EmailBlockType; icon: LucideIcon }[] = [
   { type: 'header', icon: LayoutPanelTop }, { type: 'heading', icon: Heading }, { type: 'text', icon: Type }, { type: 'image', icon: ImageIcon },
@@ -20,7 +21,7 @@ const PALETTE: { type: EmailBlockType; icon: LucideIcon }[] = [
 ];
 const DND = 'application/x-pe-email-block';
 /** Our own uploaded images load from this console's origin; emails keep the absolute public link. */
-const local = (url: string | undefined) => (url ?? '').replace(/^https?:\/\/[^/]+(\/a\/[0-9a-f-]{36})$/i, '$1');
+const local = localUrl;
 
 /** **bold**, *italic*, [label](url) and line breaks as React nodes (preview only). */
 function Inline({ text, accent }: { text: string; accent: string }) {
@@ -71,6 +72,22 @@ export function EmailDesigner({ design, dir, readOnly, onChange }: { design: Ema
   const blocks = design.blocks;
   const sel = blocks.find((b) => b.id === selected);
 
+  const qc = useQueryClient();
+  const saved = useQuery({ queryKey: ['content-blocks'], enabled: !readOnly, queryFn: ({ signal }) => api<{ data: ContentBlock[] }>('/api/content-blocks', { signal }) });
+  const designBlocks = (saved.data?.data ?? []).filter((b) => b.kind === 'design' && b.content.blocks?.length);
+  const [saving, setSaving] = useState<EmailBlock | null>(null);
+  const [blockName, setBlockName] = useState('');
+  const saveBlock = useMutation({
+    mutationFn: () => api<ContentBlock>('/api/content-blocks', { method: 'POST', body: { name: blockName, kind: 'design', content: { blocks: [saving] } } }),
+    onSuccess: () => { setSaving(null); setBlockName(''); void qc.invalidateQueries({ queryKey: ['content-blocks'] }); void qc.invalidateQueries({ queryKey: ['content'] }); },
+  });
+  /** Saved blocks are copied in (with new ids), so later edits to the saved block don't change sent emails. */
+  const insertSaved = (b: ContentBlock) => {
+    const at = selected ? blocks.findIndex((x) => x.id === selected) + 1 : blocks.length;
+    const copies = (b.content.blocks ?? []).map((x) => ({ ...x, id: newBlockId() }) as EmailBlock);
+    set([...blocks.slice(0, at), ...copies, ...blocks.slice(at)]);
+    if (copies[0]) setSelected(copies[0].id);
+  };
   const set = (next: EmailBlock[]) => onChange({ ...design, blocks: next });
   const patch = (id: string, p: Partial<EmailBlock>) => set(blocks.map((b) => (b.id === id ? { ...b, ...p } as EmailBlock : b)));
   const insert = (type: EmailBlockType, at = selected ? blocks.findIndex((b) => b.id === selected) + 1 : blocks.length) => {
@@ -99,6 +116,14 @@ export function EmailDesigner({ design, dir, readOnly, onChange }: { design: Ema
 
   return (
     <div className="pe-designer">
+      <Dialog open={!!saving} onClose={() => setSaving(null)} title={t('content.saveAsBlock')} footer={<>
+        <Button onClick={() => setSaving(null)}>{t('common.cancel')}</Button>
+        <Button variant="primary" busy={saveBlock.isPending} disabled={!blockName.trim()} onClick={() => saveBlock.mutate()}>{t('common.save')}</Button>
+      </>}>
+        <p className="pe-muted">{t('content.saveAsBlockHint')}</p>
+        <TextField label={t('templates.field.name')} value={blockName} onChange={(e) => setBlockName(e.target.value)} autoFocus />
+        <ErrorBanner error={saveBlock.error} />
+      </Dialog>
       <aside className="pe-designer__blocks" aria-label={t('designer.blocks')}>
         <div className="pe-nav__label">{t('designer.blocks')}</div>
         {PALETTE.map(({ type, icon: Icon }) => (
@@ -108,6 +133,16 @@ export function EmailDesigner({ design, dir, readOnly, onChange }: { design: Ema
           </button>
         ))}
         <p className="pe-muted pe-palette-panel__hint">{t('designer.hint')}</p>
+        {designBlocks.length > 0 && (
+          <>
+            <div className="pe-nav__label">{t('content.savedBlocks')}</div>
+            {designBlocks.slice(0, 12).map((b) => (
+              <button key={b.id} type="button" className="pe-palette-item" onClick={() => insertSaved(b)} title={t('content.insertBlock', { name: b.name })}>
+                <span className="pe-iconchip pe-pill--info" aria-hidden="true"><Blocks /></span><span>{b.name}</span>
+              </button>
+            ))}
+          </>
+        )}
       </aside>
 
       <div className="pe-designer__stage" onClick={(e) => { if (e.target === e.currentTarget) setSelected(null); }}>
@@ -136,6 +171,7 @@ export function EmailDesigner({ design, dir, readOnly, onChange }: { design: Ema
                       <button type="button" aria-label={t('designer.moveUp')} disabled={i === 0} onClick={() => move(b.id, i - 1)}><ArrowUp /></button>
                       <button type="button" aria-label={t('designer.moveDown')} disabled={i === blocks.length - 1} onClick={() => move(b.id, i + 2)}><ArrowDown /></button>
                       <button type="button" aria-label={t('designer.duplicate')} onClick={() => { const c = { ...b, id: newBlockId() }; set([...blocks.slice(0, i + 1), c, ...blocks.slice(i + 1)]); setSelected(c.id); }}><Copy /></button>
+                      <button type="button" aria-label={t('content.saveAsBlock')} title={t('content.saveAsBlock')} onClick={() => { setSaving(b); setBlockName(''); }}><BookmarkPlus /></button>
                       <button type="button" aria-label={t('designer.remove')} onClick={() => { set(blocks.filter((x) => x.id !== b.id)); setSelected(null); }}><Trash2 /></button>
                     </div>
                   )}
@@ -187,7 +223,7 @@ function BlockProps({ block, readOnly, onPatch }: { block: EmailBlock; readOnly:
   switch (block.type) {
     case 'header': body = <>
       <Field label={t('designer.f.text')}><input value={block.text} onChange={(e) => onPatch({ text: e.target.value })} /></Field>
-      <ImagePicker value={block.imageUrl} onPick={(a) => onPatch(a ? { imageUrl: a.url, imageAlt: a.name } : { imageUrl: undefined })} label={t('designer.f.logo')} />
+      <AssetPicker kind="image" value={block.imageUrl} onPick={(a) => onPatch(a ? { imageUrl: a.url, imageAlt: a.name } : { imageUrl: undefined })} label={t('designer.f.logo')} />
       <ColorField label={t('designer.f.background')} value={block.background} fallback={DEFAULT_DESIGN_STYLE.accent} onChange={(v) => onPatch({ background: v })} />
       <ColorField label={t('designer.f.textColor')} value={block.color} fallback="#ffffff" onChange={(v) => onPatch({ color: v })} />
     </>; break;
@@ -202,7 +238,7 @@ function BlockProps({ block, readOnly, onPatch }: { block: EmailBlock; readOnly:
       <AlignField value={block.align} onChange={(align) => onPatch({ align })} />
     </>; break;
     case 'image': body = <>
-      <ImagePicker value={block.src} onPick={(a) => onPatch(a ? { src: a.url, alt: block.alt || a.name.replace(/\.[^.]+$/, '') } : { src: '' })} label={t('designer.f.image')} />
+      <AssetPicker kind="image" value={block.src} onPick={(a) => onPatch(a ? { src: a.url, alt: block.alt || a.name.replace(/\.[^.]+$/, '') } : { src: '' })} label={t('designer.f.image')} />
       <Field label={t('designer.f.alt')}><input value={block.alt} onChange={(e) => onPatch({ alt: e.target.value })} /></Field>
       <Field label={t('designer.f.width', { n: block.width })}><input type="range" min={20} max={100} step={5} value={block.width} onChange={(e) => onPatch({ width: Number(e.target.value) })} /></Field>
       <Field label={t('designer.f.link')}><input dir="ltr" placeholder="https://" value={block.href ?? ''} onChange={(e) => onPatch({ href: e.target.value || undefined })} /></Field>
@@ -247,56 +283,5 @@ function StyleProps({ design, readOnly, onChange }: { design: EmailDesign; readO
       <Field label={t('designer.s.radius', { n: s.radius })}><input type="range" min={0} max={24} value={s.radius} onChange={(e) => set({ radius: Number(e.target.value) })} /></Field>
       <small className="pe-muted">{t('designer.styleHint')}</small>
     </fieldset>
-  );
-}
-
-const toBase64 = (f: File) => new Promise<string>((resolve, reject) => {
-  const r = new FileReader();
-  r.onload = () => resolve(String(r.result).replace(/^data:[^,]*,/, ''));
-  r.onerror = () => reject(r.error);
-  r.readAsDataURL(f);
-});
-
-/** Upload an image or pick one from the library. */
-function ImagePicker({ value, label, onPick }: { value: string | undefined; label: string; onPick: (a: Asset | null) => void }) {
-  const { t } = useTranslation();
-  const qc = useQueryClient();
-  const input = useRef<HTMLInputElement>(null);
-  const [drag, setDrag] = useState(false);
-  const library = useQuery({ queryKey: ['assets'], queryFn: ({ signal }) => api<{ data: Asset[] }>('/api/assets', { signal }) });
-  const upload = useMutation({
-    mutationFn: async (f: File) => {
-      if (f.size > 2 * 1024 * 1024) throw new Error(t('designer.tooBig'));
-      return api<Asset>('/api/assets', { method: 'POST', body: { name: f.name, data: await toBase64(f) } });
-    },
-    onSuccess: (a) => { void qc.invalidateQueries({ queryKey: ['assets'] }); onPick(a); },
-  });
-  const onFile = (f: File | undefined) => { if (f) upload.mutate(f); };
-  return (
-    <div className="pe-stack" style={{ gap: 8 }}>
-      <span className="pe-field"><span>{label}</span></span>
-      <label className="pe-dropzone pe-dropzone--small" data-drag={drag || undefined}
-        onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
-        onDrop={(e) => { e.preventDefault(); setDrag(false); onFile(e.dataTransfer.files[0]); }}>
-        <input ref={input} type="file" accept="image/png,image/jpeg,image/gif,image/webp" className="pe-visually-hidden" aria-label={t('designer.upload')} onChange={(e) => onFile(e.target.files?.[0])} />
-        {value ? <img src={local(value)} alt="" className="pe-picked" /> : <Upload aria-hidden="true" />}
-        <span>{upload.isPending ? t('designer.uploading') : t('designer.upload')}</span>
-        <small className="pe-muted">{t('designer.uploadHint')}</small>
-      </label>
-      <ErrorBanner error={upload.error} />
-      {library.data && library.data.data.length > 0 && (
-        <>
-          <span className="pe-muted" style={{ fontSize: '0.8rem' }}>{t('designer.library')}</span>
-          <div className="pe-assets">
-            {library.data.data.slice(0, 12).map((a) => (
-              <button key={a.id} type="button" className="pe-asset" data-selected={value === a.url || undefined} onClick={() => onPick(a)} title={a.name} aria-label={t('designer.useImage', { name: a.name })}>
-                <img src={local(a.url)} alt="" loading="lazy" />
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-      {value && <div><Button variant="ghost" onClick={() => onPick(null)}>{t('designer.removeImage')}</Button></div>}
-    </div>
   );
 }

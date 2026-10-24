@@ -122,7 +122,10 @@ test('tools follow the granted scopes, and nothing can send, schedule or activat
 
   const drafts = await connect(['drafts:write']);
   const all = (await rpc(drafts.access_token, 'tools/list')).body.result.tools.map((t: { name: string }) => t.name);
-  expect(all).toEqual(expect.arrayContaining(['create_segment', 'create_email_template', 'create_sms_template', 'create_campaign_draft']));
+  expect(all).toEqual(expect.arrayContaining(['create_segment', 'create_email_template', 'create_sms_template', 'create_campaign_draft', 'create_push_draft', 'create_whatsapp_draft', 'list_content']));
+  const wa = await callTool(drafts.access_token, 'create_whatsapp_draft', { name: 'AI WhatsApp', purpose: 'care', body: 'Hello {{ contact.first_name }}', quick_replies: ['Yes', 'No'] });
+  expect(wa.data.console_url).toContain('/content/whatsapp/');
+  expect((await callTool(drafts.access_token, 'list_content', { type: 'whatsapp' })).data.items[0]).toMatchObject({ type: 'whatsapp', name: 'AI WhatsApp' });
   for (const n of [...names, ...all]) expect(n).not.toMatch(/send|schedule|launch|activate|delete/);
 });
 

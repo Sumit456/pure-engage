@@ -12,7 +12,7 @@ import type { ContactsService } from './contacts.ts';
 import { ProviderError, allowlistMatcher, verifyTwilioSignature, type Provider } from './providers.ts';
 import { isQuiet, nextAllowed, parseWindow } from './quiet-hours.ts';
 import { addTracking, contactContext, finaliseEmailHtml, localeFor, pickLocale, render, type RenderedEmail, type RenderedSms } from './rendering.ts';
-import type { TemplatesService } from './templates.ts';
+import { assertSendable, type TemplatesService } from './templates.ts';
 import type { LinkSigner } from './tracking.ts';
 
 const RETRY_BACKOFF_MS = [60_000, 5 * 60_000, 30 * 60_000, 2 * 3_600_000];
@@ -77,8 +77,10 @@ export function createDeliveryService({ db, config, contacts, templates, signer,
     }
     const template = await templates.get(input.templateId);
     if (template.archived_at) throw badRequest('Template is archived');
+    assertSendable(template);
     const { contact } = input;
-    const { channel, purpose } = template;
+    const channel = template.channel;
+    const purpose = template.purpose;
     const { locale, part } = pickLocale(template.content, localeFor(contact));
     const address = addressOf(contact, channel);
     const id = randomUUID();

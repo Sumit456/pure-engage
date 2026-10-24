@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { renderEmailDesign, smsInfo, starterDesign, type EmailDesign } from '@pure-engage/shared';
@@ -10,19 +10,21 @@ import type { Channel, Contact, EmailPart, Purpose, SmsPart, TemplateContent, Te
 import { hasRole, useUser } from '../../auth/auth.tsx';
 import { Badge, Button, ErrorBanner, SelectField, Spinner, TextField, useFormatDate } from '../../components/ui.tsx';
 import { ContactPicker } from '../../components/ContactPicker.tsx';
+import { FolderSelect, TagsField } from '../content/common.tsx';
 
 type Locale = 'en' | 'ar';
-interface Draft { name: string; description: string; channel: Channel; purpose: Purpose; content: Record<Locale, EmailPart & SmsPart> }
+interface Draft { name: string; description: string; channel: Channel; purpose: Purpose; folder_id: string | null; tags: string[]; content: Record<Locale, EmailPart & SmsPart> }
 
 const blankPart = (): EmailPart & SmsPart => ({ subject: '', html: '', text: '', body: '' });
 const dirOf = (l: Locale) => (l === 'ar' ? 'rtl' : 'ltr');
 /** A new email template starts in the designer with a ready-made layout. */
 const designedPart = (l: Locale, design: EmailDesign = starterDesign()) => ({ ...blankPart(), design, html: renderEmailDesign(design, { dir: dirOf(l) }) });
-const toDraft = (t?: TemplateDetail): Draft => ({
-  name: t?.name ?? '', description: t?.description ?? '', channel: t?.channel ?? 'email', purpose: t?.purpose ?? 'care',
+const toDraft = (t?: TemplateDetail, start: { channel?: Channel; folder_id?: string | null } = {}): Draft => ({
+  name: t?.name ?? '', description: t?.description ?? '', channel: t?.channel ?? start.channel ?? 'email', purpose: t?.purpose ?? 'care',
+  folder_id: t ? t.folder_id : start.folder_id ?? null, tags: t?.tags ?? [],
   content: t
     ? { en: { ...blankPart(), ...(t.content.en ?? {}) }, ar: { ...blankPart(), ...(t.content.ar ?? {}) } }
-    : { en: designedPart('en'), ar: blankPart() },
+    : { en: start.channel === 'sms' ? blankPart() : designedPart('en'), ar: blankPart() },
 });
 /** Only the fields for the channel; Arabic is omitted when left empty. */
 function toContent(d: Draft): TemplateContent {
@@ -38,8 +40,10 @@ function useDebouncedValue<T>(value: T, ms = 400): T {
 }
 
 export function TemplateEditorPage() {
-  const { id } = useParams();
+  const { id, channel: routeChannel } = useParams();
+  const [search] = useSearchParams();
   const isNew = !id || id === 'new';
+  const start = { channel: (routeChannel === 'sms' ? 'sms' : 'email') as Channel, folder_id: search.get('folder') };
   const { t } = useTranslation();
   const user = useUser();
   const canEdit = hasRole(user, 'marketer');
@@ -50,7 +54,7 @@ export function TemplateEditorPage() {
   const template = useQuery({ queryKey: ['template', id], enabled: !isNew, queryFn: ({ signal }) => api<TemplateDetail>(`/api/templates/${id}`, { signal }) });
   const versions = useQuery({ queryKey: ['template', id, 'versions'], enabled: !isNew, queryFn: ({ signal }) => api<{ data: TemplateVersion[] }>(`/api/templates/${id}/versions`, { signal }) });
 
-  const [draft, setDraft] = useState<Draft>(toDraft());
+  const [draft, setDraft] = useState<Draft>(() => toDraft(undefined, start));
   const [locale, setLocale] = useState<Locale>('en');
   const [previewContact, setPreviewContact] = useState<Contact | null>(null);
   useEffect(() => { if (template.data) setDraft(toDraft(template.data)); }, [template.data]);
@@ -64,13 +68,14 @@ export function TemplateEditorPage() {
 
   const save = useMutation({
     mutationFn: () => isNew
-      ? api<TemplateDetail>('/api/templates', { method: 'POST', body: { name: draft.name, description: draft.description, channel: draft.channel, purpose: draft.purpose, content: toContent(draft) } })
-      : api<TemplateDetail>(`/api/templates/${id}`, { method: 'PUT', body: { name: draft.name, description: draft.description, purpose: draft.purpose, content: toContent(draft) } }),
+      ? api<TemplateDetail>('/api/templates', { method: 'POST', body: { name: draft.name, description: draft.description, channel: draft.channel, purpose: draft.purpose, folder_id: draft.folder_id, tags: draft.tags, content: toContent(draft) } })
+      : api<TemplateDetail>(`/api/templates/${id}`, { method: 'PUT', body: { name: draft.name, description: draft.description, purpose: draft.purpose, folder_id: draft.folder_id, tags: draft.tags, content: toContent(draft) } }),
     onSuccess: (saved) => {
       void qc.invalidateQueries({ queryKey: ['templates'] });
+      void qc.invalidateQueries({ queryKey: ['content'] });
       qc.setQueryData(['template', saved.id], saved);
       void qc.invalidateQueries({ queryKey: ['template', saved.id, 'versions'] });
-      if (isNew) navigate(`/templates/${saved.id}`, { replace: true });
+      if (isNew) navigate(`/content/${saved.channel}/${saved.id}`, { replace: true });
     },
   });
   const restore = useMutation({
@@ -97,7 +102,7 @@ export function TemplateEditorPage() {
 
   return (
     <section>
-      <div className="pe-page-header"><Link to="/templates" className="pe-muted">{t('templates.backToList')}</Link></div>
+      <div className="pe-page-header"><Link to="/content" className="pe-muted">{t('content.backToLibrary')}</Link></div>
       <form onSubmit={onSubmit} className="pe-stack" noValidate>
         <div className="pe-page-header">
           <h1>{isNew ? t('templates.new') : draft.name || t('templates.untitled')}</h1>
@@ -109,7 +114,7 @@ export function TemplateEditorPage() {
 
         <div className="pe-card pe-form-grid">
           <TextField label={t('templates.field.name')} value={draft.name} disabled={!canEdit} error={fieldErrors.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
-          <SelectField label={t('templates.field.channel')} value={draft.channel} disabled={!isNew || !canEdit} onChange={(e) => setDraft({ ...draft, channel: e.target.value as Channel })}>
+          <SelectField label={t('templates.field.channel')} value={draft.channel} disabled={!isNew || !canEdit || !!routeChannel} onChange={(e) => setDraft({ ...draft, channel: e.target.value as Channel, content: e.target.value === 'sms' ? { en: blankPart(), ar: blankPart() } : { en: designedPart('en'), ar: blankPart() } })}>
             <option value="email">{t('consent.channel_email')}</option>
             <option value="sms">{t('consent.channel_sms')}</option>
           </SelectField>
@@ -118,6 +123,8 @@ export function TemplateEditorPage() {
             <option value="marketing">{t('consent.purpose.marketing')}</option>
           </SelectField>
           <TextField label={t('templates.field.description')} value={draft.description} disabled={!canEdit} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
+          <FolderSelect value={draft.folder_id} disabled={!canEdit} onChange={(folder_id) => setDraft({ ...draft, folder_id })} />
+          <TagsField key={template.data?.id ?? 'new'} value={draft.tags} disabled={!canEdit} onChange={(tags) => setDraft({ ...draft, tags })} />
         </div>
         <p className="pe-muted">{draft.purpose === 'care' ? t('templates.purposeCare') : t('templates.purposeMarketing')}</p>
 

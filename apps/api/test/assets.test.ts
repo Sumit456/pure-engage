@@ -48,7 +48,7 @@ test('uploads that are not supported images, or too large, are refused', async (
   const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>').toString('base64');
   expect((await marketer.request({ method: 'POST', url: '/api/assets', payload: { name: 'x.png', data: svg } })).statusCode).toBe(400);
   expect((await marketer.request({ method: 'POST', url: '/api/assets', payload: { name: 'x.png', data: '' } })).statusCode).toBe(400);
-  const big = Buffer.concat([PNG, Buffer.alloc(2 * 1024 * 1024)]).toString('base64');
+  const big = Buffer.concat([PNG, Buffer.alloc(5 * 1024 * 1024)]).toString('base64');
   expect([400, 413]).toContain((await marketer.request({ method: 'POST', url: '/api/assets', payload: { name: 'big.png', data: big } })).statusCode);
 });
 

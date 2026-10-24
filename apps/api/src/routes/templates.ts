@@ -1,15 +1,15 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { smsInfo } from '@pure-engage/shared';
-import type { EmailContent, SmsContent, TemplateContent } from '../db/schema.ts';
+import type { EmailContent, PushContent, SmsContent, TemplateContent, WhatsAppContent } from '../db/schema.ts';
 import { actorOf, requireUser } from '../plugins/auth.ts';
-import { contactContext, finaliseEmailHtml, localeFor, pickLocale, render, validateContent, type RenderedEmail, type RenderedSms } from '../services/rendering.ts';
+import { contactContext, finaliseEmailHtml, localeFor, pickLocale, render, renderTextFields, validateContent, type RenderedEmail, type RenderedSms } from '../services/rendering.ts';
 import { audit } from '../services/audit.ts';
 
 const idParam = z.object({ id: z.string().uuid() });
 const versionParam = idParam.extend({ version: z.coerce.number().int().min(1) });
 const previewSchema = z.object({
-  channel: z.enum(['email', 'sms']),
+  channel: z.enum(['email', 'sms', 'push', 'whatsapp']),
   purpose: z.enum(['care', 'marketing']).default('care'),
   content: z.record(z.unknown()),
   locale: z.enum(['en', 'ar']).optional(),
@@ -47,6 +47,9 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
       wanted = input.locale ?? localeFor(c);
     }
     const { locale, part } = pickLocale(content, wanted);
+    if (input.channel === 'push' || input.channel === 'whatsapp') {
+      return { locale, fields: await renderTextFields(input.channel, part as PushContent | WhatsAppContent, { contact, data: input.data, brand: { name: app.deps.config.PE_BRAND_NAME }, unsubscribe_url: '' }) };
+    }
     const unsubscribe = input.channel === 'email' && input.purpose === 'marketing' ? `${app.services.signer.base}/u/preview` : '';
     const rendered = await render(input.channel, part as EmailContent | SmsContent, { contact, data: input.data, brand: { name: app.deps.config.PE_BRAND_NAME }, unsubscribe_url: unsubscribe });
     if (input.channel === 'sms') {

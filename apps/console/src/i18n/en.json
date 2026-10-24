@@ -14,7 +14,8 @@
     "messages": "Messages",
     "reports": "Reports",
     "settings": "Settings",
-    "integrations": "Integrations"
+    "integrations": "Integrations",
+    "content": "Content"
   },
   "common": {
     "language": "Language",
@@ -682,7 +683,8 @@
       "newJourney": "New journey",
       "newTemplate": "New template",
       "connectApp": "Connect an app",
-      "apiKeys": "API keys"
+      "apiKeys": "API keys",
+      "uploadFiles": "Upload files"
     }
   },
   "activity": {
@@ -1098,5 +1100,169 @@
         "drafts_write": "Create segments, templates and draft campaigns for you to review."
       }
     }
+  },
+  "content": {
+    "subtitle": "Every email, message, content block and file in one place. Organise them in folders and reuse them anywhere.",
+    "upload": "Upload files",
+    "create": "Create",
+    "uploadingPct": "Uploading {{pct}}%",
+    "types": {
+      "email": "Email",
+      "sms": "SMS",
+      "push": "Push",
+      "whatsapp": "WhatsApp",
+      "block": "Content block",
+      "image": "Image",
+      "document": "Document",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "createHint": {
+      "email": "Design with blocks or HTML",
+      "sms": "Text message with live length count",
+      "push": "App notification with image and link",
+      "whatsapp": "Business message with media and buttons",
+      "block": "Reusable section for emails",
+      "image": "PNG, JPEG, GIF or WebP",
+      "document": "PDF, Office or text file",
+      "video": "MP4 or WebM",
+      "audio": "MP3"
+    },
+    "pickerHint": {
+      "image": "PNG, JPEG, GIF or WebP, up to 5 MB",
+      "video": "MP4 or WebM, up to 20 MB",
+      "audio": "MP3, up to 20 MB",
+      "document": "PDF, Office or text, up to 10 MB",
+      "pdf": "PDF, up to 10 MB"
+    },
+    "removeFile": "Remove file",
+    "savedBlocks": "Saved blocks",
+    "insertBlock": "Insert “{{name}}”",
+    "saveAsBlock": "Save as content block",
+    "saveAsBlockHint": "Saved blocks appear in every email's designer. Inserting one adds a copy, so later changes to the saved block don't alter emails already built.",
+    "backToLibrary": "← Content",
+    "folder": "Folder",
+    "noFolder": "No folder",
+    "tags": "Tags",
+    "tagsPlaceholder": "e.g. ramadan, wellness",
+    "new": {
+      "push": "New push message",
+      "whatsapp": "New WhatsApp message",
+      "block": "New content block"
+    },
+    "authorOnly": "Author now · send later",
+    "saved": "Saved.",
+    "sendLater": {
+      "push": "Push messages can be written and previewed now. Sending starts once the Pura app's push key (Firebase) is connected.",
+      "whatsapp": "WhatsApp messages can be written and previewed now. Sending starts once a WhatsApp Business sender is connected, and Meta must approve each template first."
+    },
+    "liquidHint": "Personalise with Liquid, e.g. {{ contact.first_name | default: 'there' }}.",
+    "push": {
+      "title": "Title",
+      "titleHint": "{{n}}/100 · about 50 characters show on a lock screen",
+      "body": "Message",
+      "bodyHint": "{{n}}/500 · about 150 characters show before it's cut",
+      "deepLink": "Opens (app link or URL)",
+      "image": "Image (optional)",
+      "data": "Extra data for the app",
+      "key": "Key",
+      "value": "Value",
+      "addData": "Add data",
+      "device": "Device",
+      "appName": "Pura",
+      "now": "now"
+    },
+    "wa": {
+      "category": "Meta category",
+      "categories": {
+        "marketing": "Marketing",
+        "utility": "Utility (care updates)"
+      },
+      "approval": "Meta approval",
+      "approvals": {
+        "draft": "Draft",
+        "submitted": "Submitted to Meta",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "header": "Header",
+      "headers": {
+        "none": "No header",
+        "text": "Text",
+        "image": "Image",
+        "video": "Video",
+        "document": "PDF document"
+      },
+      "headerText": "Header text",
+      "body": "Message",
+      "bodyHint": "{{n}}/1024 · *bold* and _italic_ work in WhatsApp",
+      "footer": "Footer (optional)",
+      "buttons": "Buttons (up to 3)",
+      "buttonType": "Type",
+      "buttonTypes": {
+        "quick_reply": "Quick reply",
+        "url": "Open website",
+        "call": "Call phone"
+      },
+      "buttonText": "Button text",
+      "phone": "Phone (E.164)",
+      "addButton": "Add button",
+      "business": "Business account"
+    },
+    "blockKind": "Block type",
+    "blockKinds": {
+      "design": "Designer blocks",
+      "html": "HTML",
+      "text": "Plain text"
+    },
+    "blockHint": {
+      "design": "Build it like an email section. It appears under “Saved blocks” in the email designer.",
+      "html": "Raw HTML to paste into emails built in HTML mode.",
+      "text": "Reusable text, such as a disclaimer or opening hours."
+    },
+    "search": "Search content",
+    "filter": "Filter by type",
+    "filters": {
+      "all": "All",
+      "emails": "Emails",
+      "messages": "Messages",
+      "blocks": "Blocks",
+      "images": "Images",
+      "videos": "Video & audio",
+      "documents": "Documents"
+    },
+    "view": "View",
+    "grid": "Grid",
+    "list": "List",
+    "unfiled": "Not in a folder",
+    "all": "All content",
+    "count": "Items: {{count}}",
+    "quota": "{{used}} of 1 GB used",
+    "quotaHint": "Files are stored in the database for now. Large videos are better hosted in cloud storage, which can be switched on later.",
+    "selection": "Selection",
+    "selected": "Selected: {{count}}",
+    "moveTo": "Move to…",
+    "clearSelection": "Clear",
+    "uploads": "Uploads",
+    "noMatch": "Nothing matches",
+    "empty": "Your content library is empty",
+    "emptyHint": "Drop files here, or use Create to start an email, message or content block.",
+    "select": "Select {{name}}",
+    "type": "Type",
+    "size": "Size",
+    "folders": "Folders",
+    "newFolder": "New folder",
+    "folderName": "Folder name",
+    "renameFolder": "Rename {{name}}",
+    "deleteFolder": "Delete {{name}}",
+    "newSubfolder": "New folder inside {{name}}",
+    "dragHint": "Drag items onto a folder to move them.",
+    "details": "Details",
+    "openEditor": "Open editor",
+    "openFile": "Open file",
+    "publicUrl": "Public link",
+    "publicUrlHint": "Anyone with the link can view the file. Use it in emails and messages.",
+    "usedIn": "Used in",
+    "notUsed": "Not used in any current content."
   }
 }

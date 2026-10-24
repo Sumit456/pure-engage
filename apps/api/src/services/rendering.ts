@@ -1,7 +1,7 @@
 // Template rendering with Liquid. HTML output is escaped by default (so contact data can't inject markup);
 // plain text and SMS are not. No file system access: {% include %} / {% render %} have nothing to load.
 import { Liquid } from 'liquidjs';
-import type { Contact, EmailContent, Locale, SmsContent, TemplateChannel, TemplateContent } from '../db/schema.ts';
+import type { Contact, ContentPart, EmailContent, Locale, PushContent, SmsContent, TemplateChannel, TemplateContent, WhatsAppContent } from '../db/schema.ts';
 import { badRequest } from '../errors.ts';
 
 const base = { strictFilters: true, ownPropertyOnly: true, templates: {}, cache: 200, parseLimit: 200_000, renderLimit: 1_000, memoryLimit: 32 * 1024 * 1024 };
@@ -43,7 +43,7 @@ export function contactContext(c: Contact): Record<string, unknown> {
 export const localeFor = (c: Pick<Contact, 'preferred_language'>): Locale => (c.preferred_language?.toLowerCase().startsWith('ar') ? 'ar' : 'en');
 
 /** Picks the contact's language when the template has it, otherwise English. */
-export function pickLocale(content: TemplateContent, wanted: Locale): { locale: Locale; part: EmailContent | SmsContent } {
+export function pickLocale(content: TemplateContent, wanted: Locale): { locale: Locale; part: ContentPart } {
   if (wanted === 'ar' && content.ar) return { locale: 'ar', part: content.ar };
   return { locale: 'en', part: content.en };
 }
@@ -66,11 +66,32 @@ export async function render(channel: TemplateChannel, part: EmailContent | SmsC
   }
 }
 
+/** The Liquid-bearing fields of one locale's content, by field path. */
+function liquidSources(channel: TemplateChannel, part: ContentPart): Record<string, string> {
+  switch (channel) {
+    case 'sms': return { body: (part as SmsContent).body };
+    case 'push': { const p = part as PushContent; return { title: p.title, body: p.body, deep_link: p.deep_link ?? '' }; }
+    case 'whatsapp': { const w = part as WhatsAppContent; return { 'header.text': w.header.text ?? '', body: w.body, footer: w.footer ?? '' }; }
+    default: { const e = part as EmailContent; return { subject: e.subject, html: e.html, text: e.text ?? '' }; }
+  }
+}
+
+/** Push and WhatsApp previews: their text fields rendered with Liquid (they aren't sent yet). */
+export async function renderTextFields(channel: 'push' | 'whatsapp', part: PushContent | WhatsAppContent, ctx: RenderContext): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  try {
+    for (const [field, src] of Object.entries(liquidSources(channel, part))) out[field] = src ? (await textEngine.parseAndRender(src, ctx)).trim() : '';
+  } catch (err) {
+    throw badRequest(`Template error: ${err instanceof Error ? err.message.split('\n')[0] : String(err)}`);
+  }
+  return out;
+}
+
 /** Parses every part so syntax errors are caught when a template is saved, not when it's sent. */
 export function validateContent(channel: TemplateChannel, content: TemplateContent): void {
   for (const [locale, part] of Object.entries(content)) {
     if (!part) continue;
-    const sources = channel === 'sms' ? { body: (part as SmsContent).body } : { subject: (part as EmailContent).subject, html: (part as EmailContent).html, text: (part as EmailContent).text ?? '' };
+    const sources = liquidSources(channel, part);
     for (const [field, src] of Object.entries(sources)) {
       try {
         (field === 'html' ? htmlEngine : textEngine).parse(src);

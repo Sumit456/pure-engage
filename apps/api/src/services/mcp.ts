@@ -103,6 +103,18 @@ export function createMcpServer({ services, db, scopes, actor, consoleUrl }: Ctx
     }, safe(async () => json((await services.templates.list()).map((t) => ({ id: t.id, name: t.name, channel: t.channel, purpose: t.purpose, updated_at: t.updated_at })))));
   }
 
+  if (has('campaigns:read') || has('drafts:write')) {
+    server.registerTool('list_content', {
+      title: 'Content library', annotations: read,
+      description: 'Browse the content library: emails, SMS, push and WhatsApp messages, content blocks and files (names, types and folders only).',
+      inputSchema: { type: z.enum(['email', 'sms', 'push', 'whatsapp', 'block', 'image', 'document', 'video', 'audio']).optional(), q: z.string().max(100).optional(), limit: z.number().int().min(1).max(50).default(25) },
+    }, safe(async ({ type, q, limit }) => {
+      const [items, folders] = await Promise.all([services.content.list({ type, q, limit }), services.content.folders()]);
+      const names = new Map(folders.map((f) => [f.id, f.name]));
+      return json({ total: items.total, items: items.data.map((i) => ({ type: i.type, id: i.id, name: i.name, folder: i.folder_id ? names.get(i.folder_id) ?? null : null, tags: i.tags, updated_at: i.updated_at })) });
+    }));
+  }
+
   if (has('segments:read')) {
     server.registerTool('list_segments', {
       title: 'Segments', annotations: read,
@@ -180,6 +192,31 @@ export function createMcpServer({ services, db, scopes, actor, consoleUrl }: Ctx
     }, safe(async ({ name, purpose, body }) => {
       const t = await services.templates.create({ name, channel: 'sms', purpose, description: 'Drafted by an AI assistant', content: { en: { body } } }, actor);
       return json({ id: t.id, name: t.name, console_url: link(`/templates/${t.id}`) });
+    }));
+
+    server.registerTool('create_push_draft', {
+      title: 'Draft a push message', annotations: draft,
+      description: 'Creates a push notification in the content library (authored only: push sending is not available yet). Title up to ~50 characters reads best on a lock screen.',
+      inputSchema: { name: z.string().min(1).max(200), purpose: z.enum(['care', 'marketing']), title: z.string().min(1).max(100), body: z.string().min(1).max(500), deep_link: z.string().max(2000).optional().describe('App link such as pura://appointments') },
+    }, safe(async ({ name, purpose, title, body, deep_link }) => {
+      const t = await services.templates.create({ name, channel: 'push', purpose, description: 'Drafted by an AI assistant', content: { en: { title, body, ...(deep_link ? { deep_link } : {}) } } }, actor);
+      return json({ id: t.id, name: t.name, console_url: link(`/content/push/${t.id}`) });
+    }));
+
+    server.registerTool('create_whatsapp_draft', {
+      title: 'Draft a WhatsApp message', annotations: draft,
+      description: 'Creates a WhatsApp message template in the content library (authored only; it still needs Meta approval and WhatsApp sending is not available yet).',
+      inputSchema: {
+        name: z.string().min(1).max(200), purpose: z.enum(['care', 'marketing']), header_text: z.string().max(60).optional(),
+        body: z.string().min(1).max(1024), footer: z.string().max(60).optional(),
+        quick_replies: z.array(z.string().min(1).max(25)).max(3).default([]),
+      },
+    }, safe(async ({ name, purpose, header_text, body, footer, quick_replies }) => {
+      const t = await services.templates.create({
+        name, channel: 'whatsapp', purpose, description: 'Drafted by an AI assistant',
+        content: { en: { header: header_text ? { type: 'text', text: header_text } : { type: 'none' }, body, ...(footer ? { footer } : {}), buttons: quick_replies.map((text) => ({ type: 'quick_reply', text })), category: purpose === 'care' ? 'utility' : 'marketing' } },
+      }, actor);
+      return json({ id: t.id, name: t.name, console_url: link(`/content/whatsapp/${t.id}`) });
     }));
 
     server.registerTool('create_campaign_draft', {

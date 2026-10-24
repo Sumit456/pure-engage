@@ -7,13 +7,13 @@
 // Sends use the idempotency key `journey:<run>:<step>`, so a retried step never sends twice.
 import { sql, type Kysely } from 'kysely';
 import { canSend, durationMs, journeyDefinitionSchema, journeyProblems, nextSteps, type JourneyDefinition, type JourneyStep } from '@pure-engage/shared';
-import type { Contact, Database, Enrollment, Event, Journey } from '../db/schema.ts';
+import type { Contact, Database, Enrollment, Event, Journey, MessageChannel } from '../db/schema.ts';
 import { HttpError, badRequest, conflict, notFound } from '../errors.ts';
 import { audit, type Actor } from './audit.ts';
 import type { ContactsService } from './contacts.ts';
 import type { DeliveryService } from './delivery.ts';
 import type { SegmentsService } from './segments.ts';
-import type { TemplatesService } from './templates.ts';
+import { isSendable, type TemplatesService } from './templates.ts';
 
 const LEASE_MS = 5 * 60_000;
 const MAX_STEPS_PER_RUN = 25;
@@ -50,9 +50,10 @@ export function createJourneysService({ db, contacts, templates, segments, deliv
     const list = journeyProblems(def);
     for (const [id, step] of Object.entries(def.steps)) {
       if (step.type !== 'send') continue;
-      const t = await db.selectFrom('templates').select(['id', 'archived_at']).where('id', '=', step.template_id).executeTakeFirst();
+      const t = await db.selectFrom('templates').select(['id', 'archived_at', 'channel']).where('id', '=', step.template_id).executeTakeFirst();
       if (!t) list.push({ step: id, message: 'Template not found' });
       else if (t.archived_at) list.push({ step: id, message: 'Template is archived' });
+      else if (!isSendable(t.channel)) list.push({ step: id, message: 'Push and WhatsApp templates can\'t be sent yet' });
     }
     return list;
   }
@@ -253,9 +254,11 @@ export function createJourneysService({ db, contacts, templates, segments, deliv
       switch (step.type) {
         case 'send': {
           const t = await templates.get(step.template_id).catch(() => null);
+          const sendable = !!t && isSendable(t.channel);
           const address = t && contact ? (t.channel === 'email' ? contact.email : contact.phone) : null;
-          const allowed = !!t && !!contact && !!address && canSend(contact.consent, t.channel, t.purpose);
-          path.push({ ...entry, outcome: !contact ? 'would_send' : allowed ? 'would_send' : 'would_not_send', detail: { template: t?.name ?? null, channel: t?.channel ?? null, ...(contact && !allowed ? { reason: !address ? 'no_address' : 'no_consent' } : {}) } });
+          const allowed = !!t && sendable && !!contact && !!address && canSend(contact.consent, t.channel as MessageChannel, t.purpose);
+          const reason = !sendable ? 'channel_not_available' : !address ? 'no_address' : 'no_consent';
+          path.push({ ...entry, outcome: allowed || (!contact && sendable) ? 'would_send' : 'would_not_send', detail: { template: t?.name ?? null, channel: t?.channel ?? null, ...(!allowed && (contact || !sendable) ? { reason } : {}) } });
           stepId = step.next; break;
         }
         case 'wait':

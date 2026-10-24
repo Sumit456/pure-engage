@@ -15,7 +15,7 @@ async function signIn(page: Page) {
 
 test('design an email with blocks and an uploaded image, save it, and it reopens in the designer', async ({ page }) => {
   await signIn(page);
-  await page.goto('/templates/new');
+  await page.goto('/content/email/new');
   await page.getByLabel('Name', { exact: true }).fill('Designed wellness email');
 
   // New email templates open in the designer with a starter layout.
@@ -43,7 +43,7 @@ test('design an email with blocks and an uploaded image, save it, and it reopens
   if (shots) await page.screenshot({ path: `${shots}/designer.png`, fullPage: true });
 
   await page.getByRole('button', { name: 'Create template' }).click();
-  await expect(page).toHaveURL(/\/templates\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/content\/email\/[0-9a-f-]{36}$/);
 
   // The preview is the real rendered email: personalised, with the image.
   const preview = page.frameLocator('iframe.pe-preview');

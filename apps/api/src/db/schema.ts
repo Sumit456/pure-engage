@@ -162,14 +162,28 @@ export interface EventsTable {
   processed_at: NullableTimestamp;
 }
 
-export type TemplateChannel = 'email' | 'sms';
+/** Channels Pure Engage can send on today. */
+export type MessageChannel = 'email' | 'sms';
+/** Channels content can be authored for; push and WhatsApp are authored now and sent once their providers exist. */
+export type TemplateChannel = MessageChannel | 'push' | 'whatsapp';
 export type MessagePurpose = 'care' | 'marketing';
 export type Locale = 'en' | 'ar';
 
 export interface EmailContent { subject: string; html: string; text?: string | undefined; design?: Record<string, unknown> | undefined }
 export interface SmsContent { body: string }
+export interface PushContent { title: string; body: string; image_asset_id?: string | undefined; deep_link?: string | undefined; data?: Record<string, string> | undefined }
+export type WhatsAppButton = { type: 'quick_reply'; text: string } | { type: 'url'; text: string; url: string } | { type: 'call'; text: string; phone: string };
+export interface WhatsAppContent {
+  header: { type: 'none' | 'text' | 'image' | 'video' | 'document'; text?: string | undefined; asset_id?: string | undefined };
+  body: string;
+  footer?: string | undefined;
+  buttons: WhatsAppButton[];
+  category: 'marketing' | 'utility';
+  approval: 'draft' | 'submitted' | 'approved' | 'rejected';
+}
+export type ContentPart = EmailContent | SmsContent | PushContent | WhatsAppContent;
 /** One entry per locale; `en` is required, `ar` optional (falls back to `en`). */
-export type TemplateContent = { en: EmailContent | SmsContent; ar?: EmailContent | SmsContent | undefined };
+export type TemplateContent = { en: ContentPart; ar?: ContentPart | undefined };
 
 export interface TemplatesTable {
   id: Generated<string>;
@@ -182,6 +196,8 @@ export interface TemplatesTable {
   created_at: Timestamp;
   updated_at: Timestamp;
   archived_at: NullableTimestamp;
+  folder_id: string | null;
+  tags: ColumnType<string[], string[] | string | undefined, string[] | string>;
 }
 
 export interface TemplateVersionsTable {
@@ -200,7 +216,7 @@ export interface MessagesTable {
   contact_id: string;
   template_id: string | null;
   template_version: number | null;
-  channel: TemplateChannel;
+  channel: MessageChannel;
   purpose: MessagePurpose;
   locale: Locale;
   to_address: string | null;
@@ -235,7 +251,7 @@ export interface MessageEventsTable {
 
 export interface SuppressionsTable {
   id: Generated<string>;
-  channel: TemplateChannel;
+  channel: MessageChannel;
   address: string;
   reason: string;
   created_at: Timestamp;
@@ -313,17 +329,55 @@ export interface JourneyStepLogTable {
   at: Timestamp;
 }
 
+export type AssetContentType =
+  | 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp' | 'application/pdf' | 'video/mp4' | 'video/webm' | 'audio/mpeg' | 'text/csv' | 'text/plain'
+  | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  | 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+export type AssetKind = 'image' | 'document' | 'video' | 'audio';
+
 export interface AssetsTable {
   id: Generated<string>;
   name: string;
-  content_type: 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp';
+  content_type: AssetContentType;
+  kind: Generated<AssetKind>;
   size: number;
   sha256: string;
   width: number | null;
   height: number | null;
-  data: Buffer;
+  folder_id: string | null;
+  tags: ColumnType<string[], string[] | string | undefined, string[] | string>;
+  description: Generated<string>;
+  storage: Generated<string>;
   created_by: string | null;
   created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+export interface AssetBlobsTable {
+  asset_id: string;
+  data: Buffer;
+}
+
+export interface ContentFoldersTable {
+  id: Generated<string>;
+  name: string;
+  parent_id: string | null;
+  created_at: Timestamp;
+}
+
+export type ContentBlockContent = { blocks: Record<string, unknown>[] } | { html: string } | { text: string };
+export interface ContentBlocksTable {
+  id: Generated<string>;
+  name: string;
+  kind: 'design' | 'html' | 'text';
+  content: ColumnType<ContentBlockContent, ContentBlockContent | string, ContentBlockContent | string>;
+  folder_id: string | null;
+  tags: ColumnType<string[], string[] | string | undefined, string[] | string>;
+  created_by: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  archived_at: NullableTimestamp;
 }
 
 export interface WebhooksTable {
@@ -373,6 +427,9 @@ export interface Database {
   journey_step_log: JourneyStepLogTable;
   webhooks: WebhooksTable;
   assets: AssetsTable;
+  asset_blobs: AssetBlobsTable;
+  content_folders: ContentFoldersTable;
+  content_blocks: ContentBlocksTable;
   webhook_deliveries: WebhookDeliveriesTable;
   integrations: IntegrationsTable;
   integration_requests: IntegrationRequestsTable;

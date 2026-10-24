@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { journeyProblems, type Duration, type JourneyDefinition, type JourneyStep } from '@pure-engage/shared';
 import { api, ApiError } from '../../api/client.ts';
-import type { Contact, JourneyDetail, JourneyRun, SimulationStep, Template } from '../../api/types.ts';
+import { isSendable, type Contact, type JourneyDetail, type JourneyRun, type SimulationStep, type Template } from '../../api/types.ts';
 import { hasRole, useUser } from '../../auth/auth.tsx';
 import { ContactPicker } from '../../components/ContactPicker.tsx';
 import { Badge, Button, ErrorBanner, Ltr, Spinner, TextField, useFormatDate } from '../../components/ui.tsx';
@@ -49,7 +49,7 @@ function JourneyEditor() {
 
   const journey = useQuery({ queryKey: ['journey', id], enabled: !isNew, queryFn: ({ signal }) => api<JourneyDetail>(`/api/journeys/${id}`, { signal }) });
   const runs = useQuery({ queryKey: ['journey', id, 'runs'], enabled: !isNew, queryFn: ({ signal }) => api<{ data: JourneyRun[] }>(`/api/journeys/${id}/enrollments`, { signal }) });
-  const templates = useQuery({ queryKey: ['templates'], queryFn: ({ signal }) => api<{ data: Template[] }>('/api/templates', { signal }) });
+  const templates = useQuery({ queryKey: ['templates', 'sendable'], queryFn: ({ signal }) => api<{ data: Template[] }>('/api/templates', { signal }).then((r) => ({ data: r.data.filter((x) => isSendable(x.channel)) })) });
   const tpls = templates.data?.data ?? [];
 
   const [name, setName] = useState('');

@@ -8,7 +8,7 @@ import { HttpError, badRequest, conflict, notFound } from '../errors.ts';
 import { audit, type Actor } from './audit.ts';
 import type { DeliveryService } from './delivery.ts';
 import type { SegmentsService } from './segments.ts';
-import type { TemplatesService } from './templates.ts';
+import { assertSendable, type TemplatesService } from './templates.ts';
 
 const createSchema = z.object({ name: z.string().trim().min(1).max(200), template_id: z.string().uuid(), segment_id: z.string().uuid() });
 const updateSchema = createSchema.partial();
@@ -33,6 +33,7 @@ export function createCampaignsService({ db, segments, templates, delivery, cloc
   async function assertUsable(templateId: string, segmentId: string) {
     const t = await templates.get(templateId);
     if (t.archived_at) throw badRequest('Template is archived', [{ path: 'template_id', message: 'Archived' }]);
+    assertSendable(t);
     const s = await segments.get(segmentId);
     if (s.archived_at) throw badRequest('Segment is archived', [{ path: 'segment_id', message: 'Archived' }]);
     return { template: t, segment: s };
