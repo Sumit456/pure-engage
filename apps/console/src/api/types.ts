@@ -167,6 +167,7 @@ export interface IntegrationRequest {
 export interface IntegrationsOverview {
   api_keys: number; inbound_webhooks: { total: number; enabled: number }; outbound_webhooks: { total: number; enabled: number };
   requests_24h: number; errors_24h: number; hourly: number[]; ai_connections: number; mcp_url: string;
+  salesforce?: { status: 'not_set_up' | 'not_connected' | 'connected' | 'error' };
   by_source: { api_key_id: string | null; integration_id: string | null; requests: number; errors: number; last_at: string }[];
 }
 export interface OAuthGrant { id: string; client_name: string; scopes: ApiScope[]; approved_by: string | null; created_at: string; last_used_at: string | null; revoked_at: string | null }

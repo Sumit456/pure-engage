@@ -17,7 +17,7 @@ export const integrationRoutes: FastifyPluginAsync = async (app) => {
   const admin = { preHandler: requireUser('admin') };
 
   app.get('/api/integrations/overview', admin, async () => ({
-    ...(await integrations.overview()), ai_connections: await app.services.oauth.countActive(),
+    ...(await integrations.overview()), ai_connections: await app.services.oauth.countActive(), salesforce: await app.services.salesforce.summary(),
     mcp_url: `${app.deps.config.PE_PUBLIC_URL.replace(/\/$/, '')}/mcp`,
   }));
   app.get('/api/integrations/requests', admin, async (req) => {

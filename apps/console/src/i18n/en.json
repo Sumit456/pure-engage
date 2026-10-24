@@ -856,6 +856,11 @@
         "title": "PureNet",
         "body": "The PureNet connector is built against a mock and waits for the PureNet team to confirm the contract.",
         "cta": "Waiting for the PureNet team"
+      },
+      "salesforce": {
+        "title": "Salesforce",
+        "body": "Two-way CRM sync: contacts and leads come in with their consent, and message activity goes back as Tasks.",
+        "cta": "Connect Salesforce"
       }
     },
     "log": {
@@ -1078,6 +1083,136 @@
       "approvedBy": "Approved by {{who}}",
       "activity": "Activity",
       "disconnect": "Disconnect"
+    },
+    "salesforce": {
+      "subtitle": "Sync with your Salesforce org: contacts and leads come in, and message activity and email opt-outs go back.",
+      "stepsLabel": "Setup steps",
+      "steps": {
+        "app": "Connected App",
+        "credentials": "App details",
+        "connect": "Connect",
+        "mapping": "What to sync",
+        "status": "Sync"
+      },
+      "state": {
+        "not_connected": "Not connected",
+        "connected": "Connected",
+        "error": "Error"
+      },
+      "connectedBanner": "Salesforce is connected. Choose what to sync below, then press Sync now.",
+      "errors": {
+        "invalid_state": "This connection request expired or was already used. Start again.",
+        "session": "Finish connecting in the browser you started from, signed in as an admin.",
+        "denied": "The connection was cancelled in Salesforce.",
+        "token": "Salesforce didn't accept the sign-in. Check the consumer key and secret, and that the callback URL matches.",
+        "host": "Salesforce returned an address that isn't a Salesforce host, so it was refused.",
+        "scope": "Salesforce sent no refresh token. Add the refresh_token and offline_access scopes to the Connected App.",
+        "not_configured": "Save the Connected App details first.",
+        "generic": "Connecting didn't work. Try again."
+      },
+      "app": {
+        "title": "1. Create a Connected App in Salesforce",
+        "step1": "In Salesforce Setup, open App Manager and create a new Connected App.",
+        "step2": "Turn on OAuth settings and paste the callback URL below.",
+        "step3": "Add the OAuth scopes below and turn on “Require Proof Key for Code Exchange (PKCE)”.",
+        "step4": "Save, then copy the consumer key and the consumer secret.",
+        "callback": "Callback URL",
+        "scopes": "OAuth scopes"
+      },
+      "credentials": {
+        "title": "2. App details",
+        "host": "Login host",
+        "hostProduction": "Production (login.salesforce.com)",
+        "hostSandbox": "Sandbox (test.salesforce.com)",
+        "hostCustom": "My Domain",
+        "customHost": "My Domain host",
+        "customHint": "For example acme.my.salesforce.com",
+        "key": "Consumer key",
+        "secret": "Consumer secret",
+        "secretSaved": "Saved and encrypted. Leave empty to keep it.",
+        "save": "Save app details",
+        "saved": "Saved"
+      },
+      "connect": {
+        "title": "3. Connect",
+        "hint": "You'll sign in to Salesforce and approve access. Pure Engage keeps only an encrypted refresh token.",
+        "needDetails": "Save the app details first.",
+        "button": "Connect with Salesforce",
+        "reconnect": "Reconnect",
+        "user": "Connected user",
+        "org": "Org ID",
+        "instance": "Instance",
+        "since": "Connected",
+        "disconnect": "Disconnect",
+        "disconnectTitle": "Disconnect Salesforce?",
+        "disconnectBody": "The saved sign-in is revoked in Salesforce and deleted here. Contacts that were synced stay in Pure Engage."
+      },
+      "mapping": {
+        "title": "4. What to sync",
+        "objectToggle": "Sync {{object}} records",
+        "loadingFields": "Loading fields from Salesforce…",
+        "choose": "Choose a field",
+        "identity": "Identity field",
+        "identityHint": "Its value becomes the contact's external ID. Pick a member ID field to match contacts that already exist.",
+        "fields": "Extra fields",
+        "sfField": "Salesforce field",
+        "attribute": "Attribute name",
+        "addField": "Add a field",
+        "consent": "Consent fields",
+        "consentHint": "Only an explicit yes grants consent. Email Opt Out always denies email marketing.",
+        "addConsent": "Add a consent field",
+        "uncheckedDenies": "Unticked means denied",
+        "writeBack": "Write back to Salesforce",
+        "activities": "Log these as completed Tasks:",
+        "activity": {
+          "sent": "Sent",
+          "open": "Opened",
+          "click": "Clicked",
+          "unsubscribe": "Unsubscribed"
+        },
+        "optOut": "Tick Email Opt Out when someone opts out of email marketing here",
+        "optOutHint": "Opt-outs that came from Salesforce aren't sent back.",
+        "doNotCall": "Do Not Call denies SMS marketing",
+        "frequency": "Sync every",
+        "minutes": "{{count}} minutes",
+        "hours_one": "{{count}} hour",
+        "hours_other": "{{count}} hours",
+        "save": "Save sync settings"
+      },
+      "status": {
+        "title": "5. Sync status",
+        "syncNow": "Sync now",
+        "lastSync": "Last sync",
+        "nextSync": "Next sync",
+        "never": "Not yet",
+        "lastError": "Last error",
+        "object": "Object",
+        "created": "Created",
+        "updated": "Updated",
+        "unchanged": "Unchanged",
+        "skipped": "Skipped",
+        "errors": "Errors",
+        "warnings": "Warnings"
+      },
+      "outbox": {
+        "title": "Outbox",
+        "hint": "Activity and opt-outs on their way to Salesforce. Failed items can be retried.",
+        "filter": {
+          "pending": "Pending",
+          "failed": "Failed",
+          "sent": "Sent"
+        },
+        "empty": "Nothing here",
+        "item": "Item",
+        "kind": {
+          "task": "Task",
+          "opt_out": "Email opt-out"
+        },
+        "attempts": "Attempts",
+        "updated": "Updated",
+        "retry": "Retry"
+      },
+      "log": "Requests to Salesforce"
     },
     "consent": {
       "title": "{{name}} wants to connect to Pure Engage",

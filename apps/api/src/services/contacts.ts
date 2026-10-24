@@ -108,7 +108,7 @@ export function createContactsService(db: Kysely<Database>) {
     if (!existing) {
       const inserted = await tx
         .insertInto('contacts')
-        .values({ ...columns, attributes: JSON.stringify(attributes), consent: '{}' })
+        .values({ ...columns, attributes: JSON.stringify(mergeAttributes({}, attributes)), consent: '{}' }) // null clears, so a new contact doesn't store it
         .onConflict((oc) => oc.column('external_id').doNothing())
         .returningAll()
         .executeTakeFirst();
@@ -119,7 +119,7 @@ export function createContactsService(db: Kysely<Database>) {
 
     const { consent: nextConsent, changed: consentChanged } = await applyConsent(tx, existing, consent, opts.source);
     const changedColumns = created ? [] : Object.keys(columns).filter((k) => (existing as Record<string, unknown>)[k] !== columns[k]);
-    const nextAttributes = created ? attributes : mergeAttributes(existing.attributes, attributes);
+    const nextAttributes = mergeAttributes(created ? {} : existing.attributes, attributes);
     const attributesChanged = !created && JSON.stringify(nextAttributes) !== JSON.stringify(existing.attributes);
 
     let contact = existing;

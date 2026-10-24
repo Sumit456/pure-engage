@@ -1,0 +1,473 @@
+openapi: 3.1.0
+info:
+  title: Salesforce (subset used by the Pure Engage connector)
+  version: 62.0.0
+  summary: OAuth token, query, describe and sObject Collections calls, and the Contact, Lead and Task fields we use.
+  description: |
+    The part of Salesforce's documented REST API and OAuth endpoints that `apps/api/src/services/salesforce/`
+    calls (ADR-0009). Paths are as documented by Salesforce for API version 62.0; every element cites the section
+    of the Salesforce documentation it comes from. The connector runs against the customer's own Connected App, so
+    hosts are per customer: the login host (`login.salesforce.com`, `test.salesforce.com` or a My Domain) for OAuth,
+    and the `instance_url` returned with the token for everything else.
+
+    Tests run against `apps/api/test/fake-salesforce.ts`, which implements this subset. Examples are synthetic.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+  x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "Introduction to REST API" and "Resources by Version"' }
+servers:
+  - url: https://login.salesforce.com
+    description: Production login host (OAuth endpoints). Sandboxes use test.salesforce.com; orgs with My Domain use their own host.
+  - url: https://{myDomain}.my.salesforce.com
+    description: The instance URL returned with the token (REST endpoints).
+    variables:
+      myDomain:
+        default: acme
+tags:
+  - name: OAuth
+    description: Authorization, tokens and user info.
+  - name: Data
+    description: Query, describe and sObject Collections.
+security:
+  - bearer: []
+paths:
+  /services/oauth2/authorize:
+    get:
+      tags: [OAuth]
+      operationId: authorize
+      summary: Send the admin's browser to approve the Connected App (web server flow with PKCE)
+      description: Not called by the API itself; the console opens this URL. Salesforce redirects to `redirect_uri` with `code` and `state`, or `error`.
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "OAuth 2.0 Web Server Flow for Web App Integration" (authorization request, PKCE parameters)' }
+      security: []
+      parameters:
+        - { name: response_type, in: query, required: true, schema: { type: string, const: code } }
+        - { name: client_id, in: query, required: true, description: The Connected App's consumer key., schema: { type: string } }
+        - { name: redirect_uri, in: query, required: true, description: 'Must equal the callback URL configured on the Connected App: `<PE_PUBLIC_URL>/oauth/salesforce/callback`.', schema: { type: string, format: uri } }
+        - { name: scope, in: query, required: false, schema: { type: string, example: api refresh_token offline_access } }
+        - { name: state, in: query, required: true, schema: { type: string } }
+        - { name: code_challenge, in: query, required: true, description: 'BASE64URL(SHA256(code_verifier)).', schema: { type: string } }
+        - { name: code_challenge_method, in: query, required: true, schema: { type: string, const: S256 } }
+      responses:
+        '200':
+          description: The Salesforce login and approval page, shown to the admin.
+          content:
+            text/html:
+              schema: { type: string }
+        '302':
+          description: Redirect to `redirect_uri?code=…&state=…` (or `?error=access_denied&state=…`).
+        '400':
+          description: Invalid request (for example an unknown client_id or a redirect_uri mismatch).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OAuthError' }
+  /services/oauth2/token:
+    post:
+      tags: [OAuth]
+      operationId: token
+      summary: Exchange an authorization code (with the PKCE verifier) or a refresh token for an access token
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "OAuth 2.0 Web Server Flow for Web App Integration" (access token request) and "OAuth 2.0 Refresh Token Flow for Renewed Sessions"' }
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/AuthorizationCodeRequest'
+                - $ref: '#/components/schemas/RefreshTokenRequest'
+            example: { grant_type: refresh_token, refresh_token: example-refresh-token, client_id: example-consumer-key, client_secret: example-consumer-secret }
+      responses:
+        '200':
+          description: Token issued. A refresh_token is returned for the authorization_code grant when the Connected App has the refresh_token scope.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+              example:
+                access_token: example-access-token
+                refresh_token: example-refresh-token
+                instance_url: https://acme.my.salesforce.com
+                id: https://login.salesforce.com/id/00Dxx0000000001EAA/005xx0000000001AAA
+                token_type: Bearer
+                issued_at: '1767225600000'
+                signature: example-signature
+                scope: api refresh_token
+        '400':
+          description: Invalid grant, client or verifier (for example `invalid_grant` once the refresh token is revoked).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OAuthError' }
+              example: { error: invalid_grant, error_description: expired access/refresh token }
+  /services/oauth2/revoke:
+    post:
+      tags: [OAuth]
+      operationId: revoke
+      summary: Revoke a refresh token (and its access tokens)
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "Revoke OAuth Tokens"' }
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: { $ref: '#/components/schemas/RevokeRequest' }
+      responses:
+        '200':
+          description: Revoked.
+        '400':
+          description: Unknown or already revoked token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OAuthError' }
+  /services/oauth2/userinfo:
+    get:
+      tags: [OAuth]
+      operationId: userInfo
+      summary: The connected user and org (shown in the console)
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "UserInfo Endpoint"' }
+      responses:
+        '200':
+          description: The user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserInfo' }
+        '401':
+          $ref: '#/components/responses/InvalidSession'
+  /services/data/v62.0/query:
+    get:
+      tags: [Data]
+      operationId: query
+      summary: Run a SOQL query (first page)
+      description: |
+        The connector selects only the mapped fields: `SELECT … FROM Contact WHERE SystemModstamp >= <cursor>
+        ORDER BY SystemModstamp ASC, Id ASC`. Further pages come from `nextRecordsUrl`.
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "Query" resource and "Execute a SOQL Query"' }
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+          example: SELECT Id, SystemModstamp, Email, FirstName, LastName FROM Contact ORDER BY SystemModstamp ASC, Id ASC
+      responses:
+        '200':
+          description: A page of records.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QueryResult' }
+        '400':
+          $ref: '#/components/responses/ApiError'
+        '401':
+          $ref: '#/components/responses/InvalidSession'
+        '403':
+          $ref: '#/components/responses/LimitExceeded'
+  /services/data/v62.0/query/{queryLocator}:
+    get:
+      tags: [Data]
+      operationId: queryMore
+      summary: The next page of a query (the path of `nextRecordsUrl`)
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "Execute a SOQL Query" (retrieving the remaining results with nextRecordsUrl)' }
+      parameters:
+        - { name: queryLocator, in: path, required: true, schema: { type: string, example: 01gxx0000000001-2000 } }
+      responses:
+        '200':
+          description: The next page.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QueryResult' }
+        '401':
+          $ref: '#/components/responses/InvalidSession'
+  /services/data/v62.0/sobjects/{sObject}/describe:
+    get:
+      tags: [Data]
+      operationId: describe
+      summary: Fields of Contact or Lead, for the console's field mapping
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "sObject Describe" and "Get Field and Other Metadata for an Object"' }
+      parameters:
+        - { name: sObject, in: path, required: true, schema: { type: string, enum: [Contact, Lead] } }
+      responses:
+        '200':
+          description: The object's metadata (only the parts we read are described).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DescribeResult' }
+        '401':
+          $ref: '#/components/responses/InvalidSession'
+        '404':
+          $ref: '#/components/responses/ApiError'
+  /services/data/v62.0/composite/sobjects:
+    post:
+      tags: [Data]
+      operationId: createRecords
+      summary: Create up to 200 records (Tasks) in one call
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "sObject Collections" and "Create Multiple Records with Fewer Round-Trips"' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CollectionCreateRequest' }
+            example:
+              allOrNone: false
+              records:
+                - { attributes: { type: Task }, WhoId: 003xx000004TmiQAAS, Subject: 'Email opened: Appointment confirmation', Status: Completed, ActivityDate: '2026-01-10', Description: Logged by Pure Engage }
+      responses:
+        '200':
+          description: One result per record, in order.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/SaveResult' } }
+        '400':
+          $ref: '#/components/responses/ApiError'
+        '401':
+          $ref: '#/components/responses/InvalidSession'
+        '403':
+          $ref: '#/components/responses/LimitExceeded'
+    patch:
+      tags: [Data]
+      operationId: updateRecords
+      summary: Update up to 200 records (HasOptedOutOfEmail on Contacts and Leads) in one call
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "sObject Collections" and "Update Multiple Records with Fewer Round-Trips"' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CollectionUpdateRequest' }
+            example:
+              allOrNone: false
+              records:
+                - { attributes: { type: Contact }, Id: 003xx000004TmiQAAS, HasOptedOutOfEmail: true }
+      responses:
+        '200':
+          description: One result per record, in order.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/SaveResult' } }
+        '400':
+          $ref: '#/components/responses/ApiError'
+        '401':
+          $ref: '#/components/responses/InvalidSession'
+        '403':
+          $ref: '#/components/responses/LimitExceeded'
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: The access token from /services/oauth2/token, sent to the instance URL.
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "Authorization Through Connected Apps and OAuth 2.0"' }
+  responses:
+    InvalidSession:
+      description: The access token expired or was revoked. The connector refreshes it once and retries.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrors' }
+          example: [{ message: Session expired or invalid, errorCode: INVALID_SESSION_ID }]
+    LimitExceeded:
+      description: The org's API request limit was reached. The connector backs off.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrors' }
+          example: [{ message: TotalRequests Limit exceeded., errorCode: REQUEST_LIMIT_EXCEEDED }]
+    ApiError:
+      description: A REST API error.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiErrors' }
+  schemas:
+    AuthorizationCodeRequest:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "OAuth 2.0 Web Server Flow for Web App Integration" (request an access token)' }
+      required: [grant_type, code, client_id, client_secret, redirect_uri, code_verifier]
+      properties:
+        grant_type: { type: string, const: authorization_code }
+        code: { type: string }
+        client_id: { type: string }
+        client_secret: { type: string }
+        redirect_uri: { type: string, format: uri }
+        code_verifier: { type: string, description: 'The PKCE verifier (43 to 128 characters).' }
+    RefreshTokenRequest:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "OAuth 2.0 Refresh Token Flow for Renewed Sessions"' }
+      required: [grant_type, refresh_token, client_id, client_secret]
+      properties:
+        grant_type: { type: string, const: refresh_token }
+        refresh_token: { type: string }
+        client_id: { type: string }
+        client_secret: { type: string }
+    RevokeRequest:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "Revoke OAuth Tokens"' }
+      required: [token]
+      properties:
+        token: { type: string, description: A refresh token (revokes its access tokens too) or an access token. }
+    TokenResponse:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "OAuth 2.0 Web Server Flow for Web App Integration" (access token response)' }
+      required: [access_token, instance_url]
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string, description: Only for the authorization_code grant (and when refresh token rotation is on). }
+        instance_url: { type: string, format: uri, description: 'Must be https and end with .salesforce.com, .my.salesforce.com or .force.com, or the connector refuses it.' }
+        id: { type: string, format: uri, description: 'Identity URL: …/id/<org id>/<user id>.' }
+        token_type: { type: string }
+        issued_at: { type: string }
+        signature: { type: string }
+        scope: { type: string }
+    OAuthError:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "OAuth 2.0 Web Server Flow for Web App Integration" (error responses)' }
+      required: [error]
+      properties:
+        error: { type: string, examples: [invalid_grant, invalid_client, redirect_uri_mismatch, unsupported_grant_type] }
+        error_description: { type: string }
+    UserInfo:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Help, "UserInfo Endpoint" (response parameters)' }
+      properties:
+        user_id: { type: string }
+        organization_id: { type: string }
+        preferred_username: { type: string }
+        name: { type: string }
+    ApiErrors:
+      type: array
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "Status Codes and Error Responses"' }
+      items:
+        type: object
+        required: [errorCode, message]
+        properties:
+          errorCode: { type: string, examples: [INVALID_SESSION_ID, REQUEST_LIMIT_EXCEEDED, INVALID_FIELD, MALFORMED_QUERY, NOT_FOUND] }
+          message: { type: string }
+          fields: { type: array, items: { type: string } }
+    QueryResult:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "Execute a SOQL Query" (response body)' }
+      required: [totalSize, done, records]
+      properties:
+        totalSize: { type: integer }
+        done: { type: boolean }
+        nextRecordsUrl: { type: string, description: 'Path of the next page, relative to the instance URL. Present while done is false.' }
+        records:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/ContactRecord'
+              - $ref: '#/components/schemas/LeadRecord'
+    RecordAttributes:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "sObject Collections" (the attributes property with type)' }
+      required: [type]
+      properties:
+        type: { type: string }
+        url: { type: string }
+    ContactRecord:
+      type: object
+      description: Standard Contact fields the connector reads. Mapped custom fields (`…__c`) come in addition.
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Object Reference (v62.0), "Contact"' }
+      required: [Id, SystemModstamp]
+      additionalProperties: true
+      properties:
+        attributes: { $ref: '#/components/schemas/RecordAttributes' }
+        Id: { type: string }
+        SystemModstamp: { type: string, description: 'Date and time of the last change (by a user or the system), e.g. 2026-01-10T06:00:00.000+0000.' }
+        Email: { type: [string, 'null'] }
+        FirstName: { type: [string, 'null'] }
+        LastName: { type: [string, 'null'] }
+        MobilePhone: { type: [string, 'null'] }
+        Phone: { type: [string, 'null'] }
+        HasOptedOutOfEmail: { type: boolean }
+        DoNotCall: { type: boolean }
+    LeadRecord:
+      type: object
+      description: Standard Lead fields the connector reads.
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Object Reference (v62.0), "Lead"' }
+      required: [Id, SystemModstamp]
+      additionalProperties: true
+      properties:
+        attributes: { $ref: '#/components/schemas/RecordAttributes' }
+        Id: { type: string }
+        SystemModstamp: { type: string }
+        Email: { type: [string, 'null'] }
+        FirstName: { type: [string, 'null'] }
+        LastName: { type: [string, 'null'] }
+        MobilePhone: { type: [string, 'null'] }
+        Phone: { type: [string, 'null'] }
+        HasOptedOutOfEmail: { type: boolean }
+        DoNotCall: { type: boolean }
+    DescribeResult:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "sObject Describe" (DescribeSObjectResult) and SOAP API Developer Guide, "Field"' }
+      required: [name, fields]
+      properties:
+        name: { type: string }
+        fields:
+          type: array
+          items:
+            type: object
+            required: [name, type]
+            properties:
+              name: { type: string }
+              label: { type: string }
+              type: { type: string, examples: [id, string, email, phone, boolean, picklist, datetime] }
+              custom: { type: boolean }
+              externalId: { type: boolean }
+              unique: { type: boolean }
+              idLookup: { type: boolean }
+              picklistValues:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    value: { type: string }
+                    active: { type: boolean }
+    Task:
+      type: object
+      description: The Task fields the connector writes. Never message bodies or contact details, only the WhoId link.
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Object Reference (v62.0), "Task"' }
+      required: [WhoId, Subject, Status]
+      properties:
+        attributes: { $ref: '#/components/schemas/RecordAttributes' }
+        WhoId: { type: string, description: The Contact or Lead Id. }
+        Subject: { type: string, maxLength: 255, examples: ['Email opened: Appointment confirmation', 'SMS sent: Reminder SMS'] }
+        Status: { type: string, const: Completed }
+        ActivityDate: { type: string, format: date }
+        Description: { type: string, maxLength: 32000, description: 'Campaign or journey name, if any.' }
+    CollectionCreateRequest:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "sObject Collections" (create: allOrNone and up to 200 records)' }
+      required: [records]
+      properties:
+        allOrNone: { type: boolean }
+        records:
+          type: array
+          maxItems: 200
+          items: { $ref: '#/components/schemas/Task' }
+    OptOutUpdate:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce Object Reference (v62.0), "Contact" and "Lead" (HasOptedOutOfEmail)' }
+      required: [attributes, Id, HasOptedOutOfEmail]
+      properties:
+        attributes: { $ref: '#/components/schemas/RecordAttributes' }
+        Id: { type: string }
+        HasOptedOutOfEmail: { type: boolean, const: true }
+    CollectionUpdateRequest:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "sObject Collections" (update: records carry Id and attributes.type, up to 200)' }
+      required: [records]
+      properties:
+        allOrNone: { type: boolean }
+        records:
+          type: array
+          maxItems: 200
+          items: { $ref: '#/components/schemas/OptOutUpdate' }
+    SaveResult:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'Salesforce REST API Developer Guide (v62.0), "sObject Collections" (response: id, success, errors)' }
+      required: [success, errors]
+      properties:
+        id: { type: [string, 'null'] }
+        success: { type: boolean }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              statusCode: { type: string, examples: [INVALID_CROSS_REFERENCE_KEY, UNABLE_TO_LOCK_ROW, ENTITY_IS_DELETED] }
+              message: { type: string }
+              fields: { type: array, items: { type: string } }

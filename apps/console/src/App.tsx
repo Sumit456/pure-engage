@@ -26,6 +26,7 @@ import { ApiReferencePage } from './pages/integrations/ApiReferencePage.tsx';
 import { NoCodePage } from './pages/integrations/NoCodePage.tsx';
 import { AiAssistantsPage } from './pages/integrations/AiAssistantsPage.tsx';
 import { ConnectAuthorizePage } from './pages/integrations/ConnectAuthorizePage.tsx';
+import { SalesforcePage } from './pages/integrations/SalesforcePage.tsx';
 
 const BUILT = new Set(['dashboard', 'contacts', 'content', 'messages', 'segments', 'campaigns', 'journeys', 'reports', 'settings', 'integrations']);
 
@@ -61,6 +62,7 @@ export const routes: RouteObject[] = [
       { path: 'integrations/reference', element: <ApiReferencePage /> },
       { path: 'integrations/no-code', element: <NoCodePage /> },
       { path: 'integrations/ai', element: <AiAssistantsPage /> },
+      { path: 'integrations/salesforce', element: <SalesforcePage /> },
       { path: 'messages/:id', element: <MessageDetailPage /> },
       ...NAV.filter((k) => !BUILT.has(k)).map((k) => ({ path: k, element: <ComingSoon section={k} /> })),
     ],

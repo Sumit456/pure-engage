@@ -50,6 +50,7 @@ npm run dev:console    # console on http://127.0.0.1:5173
 | Integrations | `GET /api/integrations/overview`, `…/requests`, `GET/POST /api/integrations`, `GET/PATCH/DELETE /api/integrations/:id`, `…/test`, `…/rotate-secret` | admin |
 | Inbound webhooks | `POST /hooks/in/:id` (any app posting JSON, mapped to `/track`) | token or HMAC `X-PE-Signature` |
 | AI assistants (MCP) | `POST /mcp`; OAuth: `/.well-known/oauth-*`, `POST /oauth/register`, `GET /oauth/authorize`, `POST /oauth/token`; console `/api/oauth/*` | OAuth 2.1 + PKCE approved by an admin, or a scoped API key ([ADR-0007](docs/adr/0007-integrations-and-ai-access.md)) |
+| Salesforce | console `GET /api/salesforce`, `PUT /api/salesforce/config`, `PATCH /api/salesforce/settings`, `POST /api/salesforce/connect`, `GET /api/salesforce/describe/:object`, `POST /api/salesforce/sync`, `DELETE /api/salesforce/connection`, `GET /api/salesforce/outbox`, `POST /api/salesforce/outbox/:id/retry`; OAuth callback `GET /oauth/salesforce/callback` ([contract](docs/contracts/salesforce.openapi.yaml)) | admin; the callback needs the same admin session that started the connection ([ADR-0009](docs/adr/0009-salesforce-sync.md)) |
 | Reports | `GET /api/reports/overview`, `…/messages`, `…/campaigns`, `…/journeys`, `…/messages.csv`, `…/campaigns.csv` | viewer (aggregates only) |
 | Webhooks | `GET/POST /api/webhooks`, `PATCH/DELETE /api/webhooks/:id`, `…/test`, `…/rotate-secret`, `…/deliveries`, `POST /api/webhook-deliveries/:id/retry` | admin |
 | Recipients | `GET /t/o/:token` (open), `GET /t/c/:token` (click), `GET/POST /u/:token` (unsubscribe, RFC 8058) | signed tokens |
@@ -64,6 +65,13 @@ WhatsApp are authored and previewed today; sending them needs their providers ([
 an API reference generated from the contract, and AI assistants. To connect Claude, add a custom connector with the
 URL `https://<your host>/mcp` and approve it as an admin. Assistants can read results and create drafts, but can
 never send, schedule or activate anything.
+
+**Salesforce** (console → Integrations → Salesforce): create a Connected App in your org with the callback URL
+`<PE_PUBLIC_URL>/oauth/salesforce/callback`, scopes `api refresh_token offline_access` and PKCE required, then enter
+its consumer key and secret and press **Connect with Salesforce**. Contacts (and optionally Leads) sync in every 15
+minutes by default; sends, opens, clicks and unsubscribes go back as completed Tasks, and email opt-outs as
+`HasOptedOutOfEmail`. `PE_SALESFORCE_ALLOW_ANY_HOST=true` lets it use a non-Salesforce host such as the local fake
+(`apps/api/test/fake-salesforce.ts`); it is for development and tests only and is refused in production.
 
 Consent is stored per channel (`email`, `sms`, `push`) and purpose (`care`, `marketing`), with a history row per
 change. Anything not explicitly `granted` counts as denied.

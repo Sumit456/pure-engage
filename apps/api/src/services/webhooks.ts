@@ -11,7 +11,7 @@ import { audit, type Actor } from './audit.ts';
 import { decrypt, encrypt } from './crypto.ts';
 import { UnsafeUrlError, assertWebhookUrl, safePost } from './net.ts';
 
-const BACKOFF_MS = [60_000, 5 * 60_000, 30 * 60_000, 2 * 3_600_000, 6 * 3_600_000];
+export const BACKOFF_MS = [60_000, 5 * 60_000, 30 * 60_000, 2 * 3_600_000, 6 * 3_600_000];
 export const MAX_WEBHOOK_ATTEMPTS = BACKOFF_MS.length + 1;
 
 export function signPayload(secret: string, body: string, t = Math.floor(Date.now() / 1000)): string {

@@ -29,6 +29,14 @@ export function assertWebhookUrl(raw: string, { allowPrivate }: { allowPrivate: 
 export interface PostResult { status: number; body: string }
 
 export async function safePost(raw: string, body: string, headers: Record<string, string>, { allowPrivate, timeoutMs = 10_000 }: { allowPrivate: boolean; timeoutMs?: number }): Promise<PostResult> {
+  return safeRequest('POST', raw, body, headers, { allowPrivate, timeoutMs });
+}
+
+/**
+ * Any method, with the same SSRF checks and address pinning as safePost. The response body is cut at `maxBytes`
+ * (webhooks keep 2,000 characters for the delivery log; API clients such as the Salesforce connector need more).
+ */
+export async function safeRequest(method: string, raw: string, body: string | null, headers: Record<string, string>, { allowPrivate, timeoutMs = 10_000, maxBytes = 2000 }: { allowPrivate: boolean; timeoutMs?: number; maxBytes?: number }): Promise<PostResult> {
   const url = assertWebhookUrl(raw, { allowPrivate });
   const host = url.hostname.replace(/^\[|\]$/g, '');
   const addresses = isIP(host) ? [{ address: host, family: isIP(host) }] : await lookup(host, { all: true });
@@ -39,8 +47,8 @@ export async function safePost(raw: string, body: string, headers: Record<string
   const send = url.protocol === 'https:' ? httpsRequest : httpRequest;
   return new Promise((resolve, reject) => {
     const req = send(url, {
-      method: 'POST',
-      headers: { ...headers, 'content-length': Buffer.byteLength(body).toString() },
+      method,
+      headers: { ...headers, ...(body !== null ? { 'content-length': Buffer.byteLength(body).toString() } : {}) },
       // Connect to the address we checked, while TLS still verifies the original host name.
       lookup: (_hostname, opts, cb) => {
         if ((opts as { all?: boolean }).all) (cb as unknown as (e: null, a: { address: string; family: number }[]) => void)(null, [pinned]);
@@ -48,13 +56,13 @@ export async function safePost(raw: string, body: string, headers: Record<string
       },
       timeout: timeoutMs,
     }, (res) => {
-      let text = '';
-      res.setEncoding('utf8');
-      res.on('data', (chunk: string) => { if (text.length < 2000) text += chunk; });
-      res.on('end', () => resolve({ status: res.statusCode ?? 0, body: text.slice(0, 2000) }));
+      const chunks: Buffer[] = [];
+      let size = 0;
+      res.on('data', (chunk: Buffer) => { if (size < maxBytes) { chunks.push(chunk); size += chunk.length; } });
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString('utf8').slice(0, maxBytes) }));
     });
     req.on('timeout', () => req.destroy(new Error('Timed out')));
     req.on('error', reject);
-    req.end(body);
+    req.end(body ?? undefined);
   });
 }

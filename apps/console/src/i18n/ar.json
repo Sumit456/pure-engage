@@ -856,6 +856,11 @@
         "title": "PureNet",
         "body": "موصل PureNet مبني على نموذج تجريبي، وينتظر تأكيد فريق PureNet للعقد.",
         "cta": "بانتظار فريق PureNet"
+      },
+      "salesforce": {
+        "title": "Salesforce",
+        "body": "مزامنة ثنائية الاتجاه مع نظام إدارة العملاء: تصل جهات الاتصال والعملاء المحتملون مع موافقاتهم، ويعود نشاط الرسائل كمهام.",
+        "cta": "ربط Salesforce"
       }
     },
     "log": {
@@ -1078,6 +1083,136 @@
       "approvedBy": "وافق عليه {{who}}",
       "activity": "النشاط",
       "disconnect": "قطع الاتصال"
+    },
+    "salesforce": {
+      "subtitle": "مزامنة مع مؤسستك في Salesforce: تصل جهات الاتصال والعملاء المحتملون، ويعود نشاط الرسائل وإلغاء الاشتراك في البريد.",
+      "stepsLabel": "خطوات الإعداد",
+      "steps": {
+        "app": "التطبيق المتصل",
+        "credentials": "بيانات التطبيق",
+        "connect": "الربط",
+        "mapping": "ما تتم مزامنته",
+        "status": "المزامنة"
+      },
+      "state": {
+        "not_connected": "غير مرتبط",
+        "connected": "مرتبط",
+        "error": "خطأ"
+      },
+      "connectedBanner": "تم ربط Salesforce. اختر ما تريد مزامنته أدناه، ثم اضغط «مزامنة الآن».",
+      "errors": {
+        "invalid_state": "انتهت صلاحية طلب الربط هذا أو استُخدم من قبل. ابدأ من جديد.",
+        "session": "أكمل الربط في المتصفح نفسه الذي بدأت منه، مسجلًا الدخول كمسؤول.",
+        "denied": "أُلغي الربط في Salesforce.",
+        "token": "لم يقبل Salesforce تسجيل الدخول. تحقق من مفتاح المستهلك وسرّه، ومن تطابق رابط الاستدعاء.",
+        "host": "أعاد Salesforce عنوانًا لا ينتمي إلى Salesforce، فتم رفضه.",
+        "scope": "لم يرسل Salesforce رمز تحديث. أضف نطاقَي refresh_token وoffline_access إلى التطبيق المتصل.",
+        "not_configured": "احفظ بيانات التطبيق المتصل أولًا.",
+        "generic": "لم ينجح الربط. حاول مرة أخرى."
+      },
+      "app": {
+        "title": "١. أنشئ تطبيقًا متصلًا في Salesforce",
+        "step1": "في إعدادات Salesforce، افتح مدير التطبيقات وأنشئ تطبيقًا متصلًا جديدًا.",
+        "step2": "فعّل إعدادات OAuth والصق رابط الاستدعاء أدناه.",
+        "step3": "أضف نطاقات OAuth أدناه وفعّل خيار «Require Proof Key for Code Exchange (PKCE)».",
+        "step4": "احفظ، ثم انسخ مفتاح المستهلك وسرّ المستهلك.",
+        "callback": "رابط الاستدعاء",
+        "scopes": "نطاقات OAuth"
+      },
+      "credentials": {
+        "title": "٢. بيانات التطبيق",
+        "host": "خادم تسجيل الدخول",
+        "hostProduction": "الإنتاج (login.salesforce.com)",
+        "hostSandbox": "بيئة الاختبار (test.salesforce.com)",
+        "hostCustom": "النطاق الخاص (My Domain)",
+        "customHost": "خادم النطاق الخاص",
+        "customHint": "مثل acme.my.salesforce.com",
+        "key": "مفتاح المستهلك",
+        "secret": "سرّ المستهلك",
+        "secretSaved": "محفوظ ومشفّر. اتركه فارغًا للإبقاء عليه.",
+        "save": "حفظ بيانات التطبيق",
+        "saved": "تم الحفظ"
+      },
+      "connect": {
+        "title": "٣. الربط",
+        "hint": "ستسجّل الدخول إلى Salesforce وتوافق على الوصول. لا يحتفظ Pure Engage إلا برمز تحديث مشفّر.",
+        "needDetails": "احفظ بيانات التطبيق أولًا.",
+        "button": "الربط مع Salesforce",
+        "reconnect": "إعادة الربط",
+        "user": "المستخدم المرتبط",
+        "org": "معرّف المؤسسة",
+        "instance": "الخادم",
+        "since": "تاريخ الربط",
+        "disconnect": "فصل",
+        "disconnectTitle": "فصل Salesforce؟",
+        "disconnectBody": "يُلغى تسجيل الدخول المحفوظ في Salesforce ويُحذف هنا. تبقى جهات الاتصال التي تمت مزامنتها في Pure Engage."
+      },
+      "mapping": {
+        "title": "٤. ما تتم مزامنته",
+        "objectToggle": "مزامنة سجلات {{object}}",
+        "loadingFields": "جارٍ تحميل الحقول من Salesforce…",
+        "choose": "اختر حقلًا",
+        "identity": "حقل الهوية",
+        "identityHint": "تصبح قيمته المعرّف الخارجي لجهة الاتصال. اختر حقل رقم العضوية لمطابقة جهات الاتصال الموجودة.",
+        "fields": "حقول إضافية",
+        "sfField": "حقل Salesforce",
+        "attribute": "اسم الخاصية",
+        "addField": "إضافة حقل",
+        "consent": "حقول الموافقة",
+        "consentHint": "لا تُمنح الموافقة إلا بـ«نعم» صريحة. خيار Email Opt Out يرفض التسويق عبر البريد دائمًا.",
+        "addConsent": "إضافة حقل موافقة",
+        "uncheckedDenies": "عدم التحديد يعني الرفض",
+        "writeBack": "الكتابة إلى Salesforce",
+        "activities": "تسجيل ما يلي كمهام مكتملة:",
+        "activity": {
+          "sent": "الإرسال",
+          "open": "الفتح",
+          "click": "النقر",
+          "unsubscribe": "إلغاء الاشتراك"
+        },
+        "optOut": "تحديد Email Opt Out عندما يلغي شخص اشتراكه في التسويق عبر البريد هنا",
+        "optOutHint": "لا يُعاد إرسال إلغاء الاشتراك الوارد من Salesforce.",
+        "doNotCall": "خيار Do Not Call يرفض التسويق عبر الرسائل النصية",
+        "frequency": "المزامنة كل",
+        "minutes": "{{count}} دقيقة",
+        "hours_one": "ساعة واحدة",
+        "hours_other": "{{count}} ساعات",
+        "save": "حفظ إعدادات المزامنة"
+      },
+      "status": {
+        "title": "٥. حالة المزامنة",
+        "syncNow": "مزامنة الآن",
+        "lastSync": "آخر مزامنة",
+        "nextSync": "المزامنة التالية",
+        "never": "لم تتم بعد",
+        "lastError": "آخر خطأ",
+        "object": "الكائن",
+        "created": "أُنشئ",
+        "updated": "حُدّث",
+        "unchanged": "دون تغيير",
+        "skipped": "تم تخطيه",
+        "errors": "أخطاء",
+        "warnings": "تحذيرات"
+      },
+      "outbox": {
+        "title": "صندوق الصادر",
+        "hint": "النشاط وإلغاء الاشتراكات في طريقها إلى Salesforce. يمكن إعادة محاولة العناصر الفاشلة.",
+        "filter": {
+          "pending": "قيد الانتظار",
+          "failed": "فشل",
+          "sent": "أُرسل"
+        },
+        "empty": "لا شيء هنا",
+        "item": "العنصر",
+        "kind": {
+          "task": "مهمة",
+          "opt_out": "إلغاء الاشتراك في البريد"
+        },
+        "attempts": "المحاولات",
+        "updated": "آخر تحديث",
+        "retry": "إعادة المحاولة"
+      },
+      "log": "الطلبات إلى Salesforce"
     },
     "consent": {
       "title": "{{name}} يريد الاتصال بـ Pure Engage",
