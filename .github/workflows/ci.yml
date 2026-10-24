@@ -5,6 +5,70 @@ on:
 permissions:
   contents: read
 jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pure_engage
+          POSTGRES_DB: pure_engage
+          POSTGRES_HOST_AUTH_METHOD: trust # CI-only throwaway database, not reachable from outside the job
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U pure_engage" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PE_DATABASE_URL: postgres://pure_engage@localhost:5432/pure_engage
+      PE_TEST_DATABASE_URL: postgres://pure_engage@localhost:5432/pure_engage_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run migrate
+      - name: Console end-to-end (Playwright, real API + Postgres)
+        env:
+          PE_E2E_DATABASE_BASE: postgres://pure_engage@localhost:5432/
+        run: |
+          npx -w @pure-engage/console playwright install --with-deps chromium
+          npm run e2e:console
+  docker:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pure_engage
+          POSTGRES_DB: pure_engage
+          POSTGRES_HOST_AUTH_METHOD: trust # CI-only throwaway database
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U pure_engage" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t pure-engage:ci .
+      - name: Smoke-test the production image
+        run: |
+          docker run -d --name pe --network host \
+            -e PE_DATABASE_URL=postgres://pure_engage@localhost:5432/pure_engage \
+            -e PE_TRACKING_SECRET=ci-only-tracking-secret-0123456789abcdef \
+            -e PE_SECRET_KEY=$(openssl rand -base64 32) \
+            -e PE_ADMIN_EMAIL=admin@example.com -e PE_ADMIN_PASSWORD=ci-only-password \
+            pure-engage:ci
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4200/healthz && break; sleep 2; done
+          curl -sf http://127.0.0.1:4200/healthz
+          curl -sf http://127.0.0.1:4200/ | grep -q '<title>Pure Engage</title>'
+          curl -sf http://127.0.0.1:4200/contacts | grep -q '<title>Pure Engage</title>'
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'x-pe-csrf: 1' -H 'content-type: application/json' \
+            -d '{"email":"admin@example.com","password":"ci-only-password"}' http://127.0.0.1:4200/api/auth/login)
+          [ "$code" = 200 ] || { docker logs pe; exit 1; }
+      - if: failure()
+        run: docker logs pe || true
   contracts:
     runs-on: ubuntu-latest
     steps:
@@ -16,6 +80,8 @@ jobs:
       - run: npm ci
       - run: npm run lint:contracts
       - run: npm run check:evidence
+      - name: End-to-end against the PureNet mocks
+        run: npm run e2e:purenet
       - name: Smoke-test the PureNet mock
         run: |
           npm run mock:purenet > prism.log 2>&1 &

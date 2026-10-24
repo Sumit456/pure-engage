@@ -7,3 +7,11 @@ data/
 *.sqlite
 coverage/
 .DS_Store
+.pgdata/
+dist/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Local agent worktrees
+.claude/worktrees/

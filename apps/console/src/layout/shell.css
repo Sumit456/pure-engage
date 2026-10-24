@@ -1,0 +1,155 @@
+/* App shell. Logical properties (inline-start/end) so the layout mirrors automatically in Arabic (dir="rtl"). */
+.pe-shell {
+  display: grid;
+  grid-template-columns: var(--pe-sidebar-width) minmax(0, 1fr);
+  min-height: 100%;
+  transition: grid-template-columns 0.2s var(--pe-ease);
+}
+.pe-shell[data-collapsed] { grid-template-columns: var(--pe-sidebar-collapsed) minmax(0, 1fr); }
+
+.pe-sidebar {
+  position: sticky;
+  inset-block-start: 0;
+  block-size: 100vh;
+  background: var(--pe-sidebar);
+  border-inline-end: 1px solid var(--pe-border);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.pe-brand { display: flex; align-items: center; gap: 10px; padding-inline: 4px; min-block-size: 36px; }
+.pe-brand__mark {
+  display: inline-grid; place-items: center; flex: none;
+  inline-size: 34px; block-size: 34px; border-radius: 11px;
+  background: var(--pe-brand-600); color: var(--pe-on-brand); box-shadow: var(--pe-shadow);
+}
+.pe-brand__mark svg { inline-size: 17px; block-size: 17px; }
+.pe-brand__text { display: flex; flex-direction: column; line-height: 1.15; min-inline-size: 0; }
+.pe-brand__name { font-family: var(--pe-font-display); font-size: 1.12rem; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+.pe-brand__tag { font-size: 0.72rem; color: var(--pe-text-muted); white-space: nowrap; }
+
+.pe-nav { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.pe-nav__group { display: flex; flex-direction: column; gap: 2px; }
+.pe-nav__label { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--pe-text-muted); padding: 0 10px 4px; white-space: nowrap; }
+.pe-nav__link {
+  display: flex; align-items: center; gap: 10px;
+  min-block-size: 36px; padding: 0 10px; border-radius: var(--pe-radius-sm);
+  color: var(--pe-text); text-decoration: none; font-weight: 500; white-space: nowrap;
+  transition: background 0.15s var(--pe-ease), color 0.15s var(--pe-ease);
+}
+.pe-nav__link svg { inline-size: 17px; block-size: 17px; flex: none; color: var(--pe-text-muted); }
+.pe-nav__link:hover { background: var(--pe-surface-muted); }
+.pe-nav__link.active { background: var(--pe-brand-100); color: var(--pe-brand-600); font-weight: 700; }
+.pe-nav__link.active svg { color: var(--pe-brand-600); }
+.pe-nav__link:focus-visible { outline: 2px solid var(--pe-brand-500); outline-offset: 1px; }
+
+.pe-sidebar__foot { display: flex; flex-direction: column; gap: 10px; }
+.pe-sidebar__note {
+  display: flex; gap: 8px; align-items: flex-start; font-size: 0.75rem; color: var(--pe-text-muted);
+  background: var(--pe-surface); border: 1px solid var(--pe-border); border-radius: var(--pe-radius-sm); padding: 10px;
+}
+.pe-sidebar__note svg { inline-size: 15px; block-size: 15px; flex: none; color: var(--pe-brand-600); margin-block-start: 1px; }
+.pe-collapse { align-self: flex-end; }
+
+.pe-shell[data-collapsed] .pe-brand__text,
+.pe-shell[data-collapsed] .pe-nav__label,
+.pe-shell[data-collapsed] .pe-nav__link span,
+.pe-shell[data-collapsed] .pe-sidebar__note { display: none; }
+.pe-shell[data-collapsed] .pe-nav__link { justify-content: center; padding: 0; }
+.pe-shell[data-collapsed] .pe-brand { justify-content: center; padding: 0; }
+.pe-shell[data-collapsed] .pe-collapse { align-self: center; }
+
+.pe-main { display: flex; flex-direction: column; min-inline-size: 0; }
+.pe-topbar {
+  position: sticky; inset-block-start: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  min-block-size: 60px; padding: 0 24px;
+  background: color-mix(in oklab, var(--pe-bg) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border-block-end: 1px solid var(--pe-border);
+}
+
+.pe-icon-button {
+  display: inline-grid; place-items: center; flex: none;
+  inline-size: 36px; block-size: 36px; border-radius: var(--pe-radius-sm);
+  border: 1px solid transparent; background: transparent; color: var(--pe-text); cursor: pointer;
+  transition: background 0.15s var(--pe-ease);
+}
+.pe-icon-button:hover { background: var(--pe-surface-muted); }
+.pe-icon-button:focus-visible { outline: 2px solid var(--pe-brand-500); outline-offset: 1px; }
+.pe-icon-button svg { inline-size: 18px; block-size: 18px; }
+
+.pe-search-trigger {
+  display: flex; align-items: center; gap: 8px; flex: 1; max-inline-size: 420px; min-inline-size: 0;
+  block-size: 38px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--pe-border);
+  background: var(--pe-surface); color: var(--pe-text-muted); font: inherit; cursor: pointer; box-shadow: var(--pe-shadow);
+  transition: border-color 0.15s var(--pe-ease);
+}
+.pe-search-trigger:hover { border-color: color-mix(in oklab, var(--pe-brand-600) 40%, var(--pe-border)); }
+.pe-search-trigger svg { inline-size: 16px; block-size: 16px; flex: none; }
+.pe-search-trigger span { flex: 1; text-align: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pe-search-trigger kbd { font: inherit; font-size: 0.68rem; font-weight: 700; border: 1px solid var(--pe-border); background: var(--pe-surface-muted); border-radius: 6px; padding: 1px 6px; }
+
+.pe-lang { display: inline-flex; align-items: center; gap: 4px; color: var(--pe-text-muted); }
+.pe-lang svg { inline-size: 16px; block-size: 16px; }
+.pe-lang select {
+  font: inherit; font-weight: 600; font-size: 0.85rem;
+  padding: 6px 8px; border-radius: var(--pe-radius-sm);
+  border: 1px solid transparent; background: transparent; color: var(--pe-text); cursor: pointer;
+}
+.pe-lang select:hover { background: var(--pe-surface-muted); }
+
+.pe-usermenu { position: relative; }
+.pe-usermenu__trigger { border: 0; background: none; padding: 0; cursor: pointer; border-radius: 999px; }
+.pe-usermenu__trigger:focus-visible { outline: 2px solid var(--pe-brand-500); outline-offset: 2px; }
+.pe-usermenu__panel {
+  position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 8px); z-index: 30;
+  min-inline-size: 240px; padding: 6px; display: flex; flex-direction: column; gap: 2px;
+  background: var(--pe-surface); border: 1px solid var(--pe-border); border-radius: var(--pe-radius); box-shadow: var(--pe-shadow-lift);
+  animation: pe-pop 0.14s var(--pe-ease);
+}
+.pe-usermenu__who { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 10px 10px; border-block-end: 1px solid var(--pe-border); margin-block-end: 4px; }
+.pe-usermenu__who .pe-muted { font-size: 0.8rem; overflow-wrap: anywhere; }
+.pe-usermenu__item {
+  display: flex; align-items: center; gap: 10px; inline-size: 100%;
+  padding: 8px 10px; border-radius: 8px; border: 0; background: none; color: var(--pe-text);
+  font: inherit; text-align: start; text-decoration: none; cursor: pointer;
+}
+.pe-usermenu__item:hover, .pe-usermenu__item:focus-visible { background: var(--pe-surface-muted); outline: none; }
+.pe-usermenu__item svg { inline-size: 16px; block-size: 16px; color: var(--pe-text-muted); }
+
+.pe-content { padding: 28px 32px 48px; inline-size: 100%; max-inline-size: 1440px; margin-inline: auto; }
+
+.pe-scrim { display: none; }
+.pe-only-mobile { display: none; }
+
+.pe-visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+@keyframes pe-pop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 1100px) { .pe-only-wide { display: none; } }
+
+@media (max-width: 860px) {
+  .pe-shell, .pe-shell[data-collapsed] { grid-template-columns: minmax(0, 1fr); }
+  .pe-sidebar {
+    position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 50; inline-size: 272px;
+    transform: translateX(-105%); transition: transform 0.22s var(--pe-ease); box-shadow: var(--pe-shadow-lift);
+  }
+  :root[dir='rtl'] .pe-sidebar { transform: translateX(105%); }
+  .pe-shell[data-mobile-open] .pe-sidebar { transform: none; }
+  .pe-shell[data-collapsed] .pe-brand__text, .pe-shell[data-collapsed] .pe-nav__label,
+  .pe-shell[data-collapsed] .pe-nav__link span, .pe-shell[data-collapsed] .pe-sidebar__note { display: revert; }
+  .pe-shell[data-collapsed] .pe-nav__link { justify-content: flex-start; padding: 0 10px; }
+  .pe-collapse { display: none; }
+  .pe-shell[data-mobile-open] .pe-scrim { display: block; position: fixed; inset: 0; z-index: 40; border: 0; background: var(--pe-overlay); }
+  .pe-only-mobile { display: inline-grid; }
+  .pe-topbar { padding: 0 16px; }
+  .pe-content { padding: 20px 16px 40px; }
+  .pe-search-trigger kbd { display: none; }
+}

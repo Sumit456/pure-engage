@@ -1,33 +1,134 @@
-# purenet-platform
+# Pure Engage
 
-The PureHealth engagement platform, which integrates with PureNet. It's contract-first: the API and event
-contracts in `docs/contracts/` come first, and a PureNet mock is generated from them so platform work can start
-before sandbox access.
+PureHealth's member engagement and marketing automation platform, alongside the Pura app. It manages
+contacts and consent, segments, templates, campaigns, multi-step journeys (for example appointment reminders)
+and email/SMS delivery, and integrates with PureNet.
 
-> **Status: every PureNet contract is INFERRED.** It's a draft of what we need, not PureNet's documented API.
-> The open questions for the PureNet team are in [`docs/contracts/ASSUMPTIONS.md`](docs/contracts/ASSUMPTIONS.md).
+> **Status: under construction, built in milestones** (see [ADR-0003](docs/adr/0003-stack-and-layout.md)).
+> The PureNet integration is built on **INFERRED** contracts until the PureNet team answers
+> [`docs/contracts/ASSUMPTIONS.md`](docs/contracts/ASSUMPTIONS.md).
 
 ## Layout
 | Path | What |
 |---|---|
-| `docs/audit/orbit-audit.md` | Audit of `Sumit456/Orbit` (prior art): classification, findings, secrets result |
-| `docs/adr/` | ADR-0001 (new repo, Orbit referenced by pinned commit), ADR-0002 (Prism mock) |
-| `docs/contracts/purenet.openapi.yaml` | PureNet API draft: members, consents, subscriptions (INFERRED) |
-| `docs/contracts/purenet-events.asyncapi.yaml` | PureNet → platform events draft (INFERRED) |
-| `docs/contracts/platform-ingest.openapi.yaml` | Our ingest API, adopted from Orbit (CONFIRMED as Orbit behaviour) |
-| `docs/contracts/platform-webhooks.asyncapi.yaml` | Our outbound webhooks, adopted from Orbit (CONFIRMED as Orbit behaviour) |
-| `docs/contracts/ASSUMPTIONS.md` | Register of assumptions to validate |
-| `mock/purenet/` | Prism mock: docker-compose, smoke test, examples |
-| `scripts/check-evidence.mjs` | Fails if any contract element lacks an `x-evidence` label |
+| `apps/api` | Fastify API + PostgreSQL (Kysely, migrations). TypeScript run directly by Node 22 |
+| `apps/console` | React + Vite console. English and Arabic (RTL). Theme in `src/theme/tokens.css` |
+| `packages/shared` | zod schemas and types shared by the API and console |
+| `packages/purenet-connector` | Provisional PureNet connector: OAuth, REST client, signed webhook receiver, mapping |
+| `packages/sdk` | `@pure-engage/sdk`: dependency-free JS client for the public API and webhook signatures |
+| `docs/contracts/` | OpenAPI/AsyncAPI contracts (every element labelled CONFIRMED or INFERRED) + `ASSUMPTIONS.md` |
+| `docs/adr/` | Decisions: 0001 repo location, 0002 contract-first mock, 0003 stack and layout, 0004 messaging and delivery, 0005 journeys, 0006 reporting, webhooks and operations, 0007 integrations and AI access (MCP), 0008 content builder |
+| `docs/audit/orbit-audit.md` | Audit of `Sumit456/Orbit` (prior art only; no code reused) |
+| `mock/purenet/` | Prism mock of PureNet, smoke test, examples |
+| `scripts/` | `dev-db.sh` (local Postgres), `check-evidence.mjs`, `e2e-purenet.sh` |
+| `.mcp.json` | REA reverse-engineering MCP server (analysis only; see CLAUDE.md rule 6) |
 
-## Quick start
+## Getting started
+Requires Node ≥ 22.18 and PostgreSQL 16 (or set `PE_DATABASE_URL` / `PE_TEST_DATABASE_URL` to your own server).
+
 ```bash
 npm ci
-npm run lint:contracts     # Redocly + AsyncAPI
-npm run check:evidence     # every element labelled CONFIRMED (with a source) or INFERRED (with an A-NNN)
-npm run mock:purenet       # PureNet mock on http://127.0.0.1:4010
-npm run smoke:purenet      # in another terminal
-npm run scan:secrets       # gitleaks
+npm run db             # local Postgres on :5433 with pure_engage and pure_engage_test databases
+PE_NEW_USER_PASSWORD='choose-a-long-one' npm run create-user -- you@example.com admin "Your Name"
+npm run dev:api        # API on http://127.0.0.1:4200 (applies migrations on start)
+npm run dev:console    # console on http://127.0.0.1:5173
 ```
 
-Ground rules (no real data, no secrets, evidence labels, Orbit is read-only) are in [`CLAUDE.md`](CLAUDE.md).
+## API at a glance
+| Area | Endpoints | Access |
+|---|---|---|
+| Auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/password` | Session cookie (httpOnly) + `x-pe-csrf: 1` on writes; 30 min idle / 12 h max |
+| Contacts | `GET/POST /api/contacts`, `GET/PATCH/DELETE /api/contacts/:id`, `GET /api/contacts/:id/events` | viewer reads, marketer writes, admin deletes; every contact view is audited |
+| Admin | `/api/users`, `/api/api-keys`, `GET /api/audit` | admin |
+| Content | `GET /api/content`, `POST /api/content/move`, `/api/folders`, `/api/content-blocks`, `POST /api/assets/upload` (raw bytes), `GET/PATCH/DELETE /api/assets/:id`, `GET /api/assets/usage`; public files at `GET /a/:id` (ranges supported) | viewer reads, marketer writes |
+| Templates | `GET/POST /api/templates`, `GET/PUT/DELETE /api/templates/:id`, `…/versions`, `…/versions/:v/restore`, `POST /api/templates/preview` | viewer reads, marketer writes |
+| Segments | `GET/POST /api/segments`, `GET/PUT/DELETE /api/segments/:id`, `POST /api/segments/preview` | viewer reads, marketer writes |
+| Campaigns | `GET/POST /api/campaigns`, `GET/PUT /api/campaigns/:id`, `…/estimate`, `…/schedule`, `…/cancel`, `…/test` | viewer reads, marketer writes and sends |
+| Journeys | `GET/POST /api/journeys`, `GET/PUT/DELETE /api/journeys/:id`, `…/activate`, `…/pause`, `…/enrollments`, `POST /api/journeys/simulate`, `POST /api/journeys/starters/appointment-reminder` | viewer reads, marketer writes |
+| Messages | `GET /api/messages`, `GET /api/messages/:id` (audited), `GET /api/delivery/status` | viewer |
+| Public API v1 | `POST /track`, `POST /messages/send`, `GET /contacts/:id`, `POST /contacts/lookup`, `POST /consent`, `POST /journeys/:id/trigger`, `GET /messages/:id`, `GET /segments`, `GET /campaigns[/:id]`, `GET /reports/overview`, `GET /openapi.json` (all under `/api/v1`, [contract](docs/contracts/platform-ingest.openapi.yaml)) | `Authorization: Bearer pe_…` API key with the scopes each endpoint lists |
+| Integrations | `GET /api/integrations/overview`, `…/requests`, `GET/POST /api/integrations`, `GET/PATCH/DELETE /api/integrations/:id`, `…/test`, `…/rotate-secret` | admin |
+| Inbound webhooks | `POST /hooks/in/:id` (any app posting JSON, mapped to `/track`) | token or HMAC `X-PE-Signature` |
+| AI assistants (MCP) | `POST /mcp`; OAuth: `/.well-known/oauth-*`, `POST /oauth/register`, `GET /oauth/authorize`, `POST /oauth/token`; console `/api/oauth/*` | OAuth 2.1 + PKCE approved by an admin, or a scoped API key ([ADR-0007](docs/adr/0007-integrations-and-ai-access.md)) |
+| Salesforce | console `GET /api/salesforce`, `PUT /api/salesforce/config`, `PATCH /api/salesforce/settings`, `POST /api/salesforce/connect`, `GET /api/salesforce/describe/:object`, `POST /api/salesforce/sync`, `DELETE /api/salesforce/connection`, `GET /api/salesforce/outbox`, `POST /api/salesforce/outbox/:id/retry`; OAuth callback `GET /oauth/salesforce/callback` ([contract](docs/contracts/salesforce.openapi.yaml)) | admin; the callback needs the same admin session that started the connection ([ADR-0009](docs/adr/0009-salesforce-sync.md)) |
+| Reports | `GET /api/reports/overview`, `…/messages`, `…/campaigns`, `…/journeys`, `…/messages.csv`, `…/campaigns.csv` | viewer (aggregates only) |
+| Webhooks | `GET/POST /api/webhooks`, `PATCH/DELETE /api/webhooks/:id`, `…/test`, `…/rotate-secret`, `…/deliveries`, `POST /api/webhook-deliveries/:id/retry` | admin |
+| Recipients | `GET /t/o/:token` (open), `GET /t/c/:token` (click), `GET/POST /u/:token` (unsubscribe, RFC 8058) | signed tokens |
+| Twilio | `POST /hooks/twilio/status` (receipts), `POST /hooks/twilio/inbound` (STOP opt-out) | `X-Twilio-Signature` |
+| PureNet | `POST /hooks/purenet` (only when `PURENET_WEBHOOK_SECRET` is set) | HMAC signature (A-011) |
+
+**Content** (console → Content): one library for emails, SMS, push and WhatsApp messages, reusable content blocks
+and files (images, PDF, video, audio, Office documents) in folders, with previews and drag-and-drop uploads. Push and
+WhatsApp are authored and previewed today; sending them needs their providers ([ADR-0008](docs/adr/0008-content-builder.md)).
+
+**Integrations** (console → Integrations): scoped API keys, inbound and outbound webhooks, Zapier/Make/n8n recipes,
+an API reference generated from the contract, and AI assistants. To connect Claude, add a custom connector with the
+URL `https://<your host>/mcp` and approve it as an admin. Assistants can read results and create drafts, but can
+never send, schedule or activate anything.
+
+**Salesforce** (console → Integrations → Salesforce): create a Connected App in your org with the callback URL
+`<PE_PUBLIC_URL>/oauth/salesforce/callback`, scopes `api refresh_token offline_access` and PKCE required, then enter
+its consumer key and secret and press **Connect with Salesforce**. Contacts (and optionally Leads) sync in every 15
+minutes by default; sends, opens, clicks and unsubscribes go back as completed Tasks, and email opt-outs as
+`HasOptedOutOfEmail`. `PE_SALESFORCE_ALLOW_ANY_HOST=true` lets it use a non-Salesforce host such as the local fake
+(`apps/api/test/fake-salesforce.ts`); it is for development and tests only and is refused in production.
+
+Consent is stored per channel (`email`, `sms`, `push`) and purpose (`care`, `marketing`), with a history row per
+change. Anything not explicitly `granted` counts as denied.
+
+**Delivery is sandboxed by default.** Nothing reaches a real inbox or phone until `PE_DELIVERY_MODE=live` *and*
+SMTP/Twilio credentials are set (see [ADR-0004](docs/adr/0004-messaging-and-delivery.md) and `.env.example`).
+Use `PE_DELIVERY_ALLOWLIST` to limit live sends to test addresses.
+
+Checks (all run in CI):
+```bash
+npm test               # connector + API (against Postgres) + console
+npm run typecheck
+npm run build
+npm run lint:contracts && npm run check:evidence
+npm run e2e:console    # Playwright: real API + Postgres + console
+npm run e2e:purenet    # PureNet flow against the Prism mocks
+npm run scan:secrets   # gitleaks
+```
+
+## Deploying
+One image runs the API and serves the console:
+
+```bash
+cp .env.example .env    # set PE_ADMIN_EMAIL/PASSWORD, PE_TRACKING_SECRET, PE_SECRET_KEY, PE_PUBLIC_URL
+docker compose up --build   # Postgres + Pure Engage on http://localhost:4200
+```
+
+In production, put it behind HTTPS (session cookies are `Secure`). Production refuses to start without
+`PE_TRACKING_SECRET` and `PE_SECRET_KEY`. Delivery stays in the sandbox until `PE_DELIVERY_MODE=live` and
+SMTP/Twilio credentials are set. Point Twilio's status callback and inbound webhook at
+`/hooks/twilio/status` and `/hooks/twilio/inbound`, and PureNet at `/hooks/purenet`
+(`PURENET_WEBHOOK_SECRET`).
+
+### Deploy to Render (test only)
+[`render.yaml`](render.yaml) is a Render Blueprint for a **test** deployment. It uses the free plan, the Frankfurt
+region, sandbox delivery and synthetic demo data.
+1. In Render, choose **New → Blueprint**, connect GitHub and pick this repo on `main`.
+2. When asked, enter `PE_ADMIN_EMAIL` and a long `PE_ADMIN_PASSWORD`, then **Apply**. The first build takes about
+   5–10 minutes.
+3. Open the `onrender.com` URL and sign in.
+
+What you get:
+- **Demo data:** 20 test members (`MBR-TEST-*`), templates, segments, a sent email campaign, an SMS campaign
+  draft and the live appointment-reminder journey with five bookings. It's seeded once, on first start
+  (`PE_SEED_DEMO`).
+- **Sandbox delivery:** messages appear in the **Outbox** and reports; nothing is really sent. Signing secrets are
+  generated by Render.
+
+Free-plan limits: the service sleeps after 15 minutes idle, so the first visit takes about a minute. Scheduled
+sends and journey waits only run while it's awake. The free database expires after 30 days.
+
+To try real sends to your own inbox and phone, set `PE_DELIVERY_MODE=live` and `PE_DELIVERY_ALLOWLIST` (your
+address and number only). Then add the SMTP settings (`PE_SMTP_HOST`, `PE_SMTP_PORT`, `PE_SMTP_USER`,
+`PE_SMTP_PASS`) and the Twilio settings. Free Render instances may block ports 465 and 587; providers such as Brevo
+also accept 2525.
+
+**Don't load real member data here.** PureHealth data must be hosted in the UAE (A-018).
+
+Configuration lives in environment variables; see [`.env.example`](.env.example). Ground rules (no real data,
+no secrets, evidence labels, code conventions) are in [`CLAUDE.md`](CLAUDE.md).

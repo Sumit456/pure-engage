@@ -1,4 +1,4 @@
-# Audit: `Sumit456/Orbit` as input to purenet-platform
+# Audit: `Sumit456/Orbit` as input to purenet-platform (now Pure Engage)
 
 - **Audited:** 2026-10-22, full history (8 commits, `0206a35`..`dbc6cc9`), read-only clone.
 - **Pinned reference:** `https://github.com/Sumit456/Orbit/tree/dbc6cc9`

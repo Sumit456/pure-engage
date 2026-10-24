@@ -1,0 +1,117 @@
+/*
+ * Pure Engage design tokens: the ONE place brand colours and fonts live.
+ * Placeholder palette (calm teal on warm neutrals). Swap in the PureHealth values (colours, fonts) when they're
+ * confirmed; every component reads these variables, so nothing else needs to change.
+ * The logo slot is /public/brand/logo.svg (not committed until its use is approved).
+ */
+:root {
+  /* Brand */
+  --pe-brand-600: oklch(0.46 0.085 182);
+  --pe-brand-500: oklch(0.52 0.09 182);
+  --pe-brand-100: oklch(0.94 0.035 178);
+  --pe-accent-500: oklch(0.6 0.12 45);
+
+  /* Neutrals */
+  --pe-bg: oklch(0.982 0.006 85);
+  --pe-surface: oklch(0.997 0.003 85);
+  --pe-surface-muted: oklch(0.955 0.009 85);
+  --pe-sidebar: oklch(0.97 0.008 85);
+  --pe-canvas: oklch(0.965 0.008 85);
+  --pe-border: oklch(0.91 0.01 85);
+  --pe-text: oklch(0.24 0.02 180);
+  --pe-text-muted: oklch(0.52 0.018 150);
+  --pe-on-brand: oklch(0.985 0.01 170);
+  --pe-overlay: oklch(0.2 0.02 190 / 45%);
+
+  /* Status (strong + soft background) */
+  --pe-success: oklch(0.52 0.12 155);
+  --pe-success-soft: oklch(0.94 0.045 155);
+  --pe-warning: oklch(0.58 0.13 70);
+  --pe-warning-soft: oklch(0.95 0.05 80);
+  --pe-danger: oklch(0.55 0.19 25);
+  --pe-danger-soft: oklch(0.95 0.035 25);
+  --pe-info: oklch(0.52 0.1 240);
+  --pe-info-soft: oklch(0.95 0.025 240);
+  --pe-sms: oklch(0.56 0.12 45);
+  --pe-sms-soft: oklch(0.95 0.035 50);
+
+  /* Type */
+  --pe-font-latin: 'Manrope Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --pe-font-arabic: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+  --pe-font-display: 'Fraunces Variable', 'IBM Plex Sans Arabic', Georgia, serif;
+  --pe-font-size: 14.5px;
+
+  /* Shape, spacing, elevation, motion */
+  --pe-radius: 14px;
+  --pe-radius-sm: 10px;
+  --pe-radius-lg: 20px;
+  --pe-space: 8px;
+  --pe-shadow: 0 1px 2px oklch(0.3 0.03 70 / 0.04), 0 8px 24px -12px oklch(0.3 0.03 70 / 0.14);
+  --pe-shadow-lift: 0 2px 4px oklch(0.3 0.03 70 / 0.05), 0 18px 40px -16px oklch(0.3 0.05 180 / 0.28);
+  --pe-sidebar-width: 248px;
+  --pe-sidebar-collapsed: 68px;
+  --pe-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Charts (validated with the dataviz palette checker against --pe-surface in both modes) */
+  --pe-series-1: #2a78d6; /* email */
+  --pe-series-2: #eb6834; /* SMS */
+  --pe-grid: oklch(0.93 0.008 85);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --pe-brand-600: oklch(0.72 0.1 178);
+    --pe-brand-500: oklch(0.78 0.1 178);
+    --pe-brand-100: oklch(0.3 0.045 182);
+    --pe-bg: oklch(0.17 0.012 190);
+    --pe-surface: oklch(0.205 0.014 190);
+    --pe-surface-muted: oklch(0.25 0.012 190);
+    --pe-sidebar: oklch(0.19 0.013 190);
+    --pe-canvas: oklch(0.15 0.01 190);
+    --pe-border: oklch(1 0 0 / 10%);
+    --pe-text: oklch(0.94 0.01 85);
+    --pe-text-muted: oklch(0.7 0.015 150);
+    --pe-on-brand: oklch(0.17 0.02 190);
+    --pe-success: oklch(0.74 0.13 155);
+    --pe-success-soft: oklch(0.3 0.05 155);
+    --pe-warning: oklch(0.8 0.12 75);
+    --pe-warning-soft: oklch(0.32 0.05 75);
+    --pe-danger: oklch(0.72 0.16 25);
+    --pe-danger-soft: oklch(0.3 0.06 25);
+    --pe-info: oklch(0.74 0.1 240);
+    --pe-info-soft: oklch(0.3 0.04 240);
+    --pe-sms: oklch(0.77 0.12 50);
+    --pe-sms-soft: oklch(0.3 0.05 50);
+    --pe-series-1: #3987e5;
+    --pe-series-2: #d95926;
+    --pe-grid: oklch(1 0 0 / 7%);
+  }
+}
+
+:root[data-theme='dark'] {
+  --pe-brand-600: oklch(0.72 0.1 178);
+  --pe-brand-500: oklch(0.78 0.1 178);
+  --pe-brand-100: oklch(0.3 0.045 182);
+  --pe-bg: oklch(0.17 0.012 190);
+  --pe-surface: oklch(0.205 0.014 190);
+  --pe-surface-muted: oklch(0.25 0.012 190);
+  --pe-sidebar: oklch(0.19 0.013 190);
+  --pe-canvas: oklch(0.15 0.01 190);
+  --pe-border: oklch(1 0 0 / 10%);
+  --pe-text: oklch(0.94 0.01 85);
+  --pe-text-muted: oklch(0.7 0.015 150);
+  --pe-on-brand: oklch(0.17 0.02 190);
+  --pe-success: oklch(0.74 0.13 155);
+  --pe-success-soft: oklch(0.3 0.05 155);
+  --pe-warning: oklch(0.8 0.12 75);
+  --pe-warning-soft: oklch(0.32 0.05 75);
+  --pe-danger: oklch(0.72 0.16 25);
+  --pe-danger-soft: oklch(0.3 0.06 25);
+  --pe-info: oklch(0.74 0.1 240);
+  --pe-info-soft: oklch(0.3 0.04 240);
+  --pe-sms: oklch(0.77 0.12 50);
+  --pe-sms-soft: oklch(0.3 0.05 50);
+  --pe-series-1: #3987e5;
+  --pe-series-2: #d95926;
+  --pe-grid: oklch(1 0 0 / 7%);
+}

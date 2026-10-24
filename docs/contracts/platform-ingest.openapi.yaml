@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: purenet-platform ingest API
+  title: Pure Engage ingest API
   version: 0.1.0
   summary: The platform's own public API for profiles, events, journey triggers and transactional sends.
   description: |
@@ -21,11 +21,16 @@ tags:
     description: Profiles and events.
   - name: Messaging
     description: Journey triggers and transactional sends.
+  - name: Contacts
+    description: Reading contacts and changing consent.
+  - name: Insights
+    description: Segments, campaigns and reports (read only).
 paths:
   /track:
     post:
       tags: [Ingest]
       operationId: track
+      x-scopes: [contacts:write (attributes), consent:write (attributes with consent), events:write (events)]
       summary: Batch upsert profile attributes and record events
       x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:216-231; test/api.test.js:30-38' }
       requestBody:
@@ -55,30 +60,44 @@ paths:
     post:
       tags: [Messaging]
       operationId: triggerJourney
-      summary: Enter a contact into an API-triggered journey
-      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:252; src/services/journeys.js:297 (code only, no dedicated route test)' }
+      summary: Enter a contact into an active journey
+      description: |
+        Records the journey's trigger event for the contact; the worker then enrols them (journeys react to events,
+        ADR-0005), so other active journeys listening for the same event start too. Unknown contacts, or
+        `attributes`, need contacts:write.
+      x-scopes: [journeys:trigger]
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
       parameters:
         - name: journeyId
           in: path
           required: true
-          schema: { type: string }
+          schema: { type: string, format: uuid }
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Recipient' }
+            schema: { $ref: '#/components/schemas/TriggerRequest' }
+            example: { external_id: MBR-TEST-0001, properties: { appointment_id: APT-TEST-0001, start: '2026-12-01T09:00:00Z' }, idempotency_key: trig_test_0001 }
       responses:
-        '200':
-          description: Trigger result.
+        '202':
+          description: Trigger event recorded; the worker enrols the contact.
           content:
             application/json:
-              schema: { type: object }
+              schema: { $ref: '#/components/schemas/TriggerResult' }
+        '200':
+          description: Repeat of an earlier idempotency_key; nothing new recorded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TriggerResult' }
+        '400': { $ref: '#/components/responses/Error' }
         '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
   /messages/send:
     post:
       tags: [Messaging]
       operationId: sendMessages
+      x-scopes: [messages:send, contacts:write (only for recipients that bring attributes or phone, or don't exist yet)]
       summary: Transactional send of a template to up to 100 recipients
       x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:234-250; test/messaging.test.js:99' }
       requestBody:
@@ -121,13 +140,187 @@ paths:
                 required: [ok]
                 properties: { ok: { type: boolean } }
         '401': { $ref: '#/components/responses/Error' }
+  /contacts/{contactId}:
+    get:
+      tags: [Contacts]
+      operationId: getContact
+      summary: Read a contact (masked without contacts:read_pii)
+      x-scopes: [contacts:read, contacts:read_pii (full values)]
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The contact. Every read is audited as PHI access.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContactView' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /contacts/lookup:
+    post:
+      tags: [Contacts]
+      operationId: lookupContact
+      summary: Find a contact by external_id, email or contact_id (in the body, so identifiers stay out of URLs)
+      x-scopes: [contacts:read, contacts:read_pii (full values)]
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContactRef' }
+            example: { external_id: MBR-TEST-0001 }
+      responses:
+        '200':
+          description: The contact.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContactView' }
+              example: { id: 7d3c0b0e-0000-4000-8000-000000000001, external_id: MBR-TEST-0001, email: t***@example.com, phone: '+971*******01', first_name: T., last_name: M., preferred_language: ar, timezone: Asia/Dubai, consent: { email: { care: granted } }, attribute_names: [clinic], masked: true }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /consent:
+    post:
+      tags: [Contacts]
+      operationId: setConsent
+      summary: Change an existing contact's consent (recorded in consent history with source `api`)
+      x-scopes: [consent:write]
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConsentRequest' }
+            example: { external_id: MBR-TEST-0001, consent: { email: { marketing: denied } } }
+      responses:
+        '200':
+          description: The contact's consent after the change.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [contact_id, consent]
+                properties:
+                  contact_id: { type: string }
+                  consent: { $ref: '#/components/schemas/ConsentMap' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /messages/{messageId}:
+    get:
+      tags: [Messaging]
+      operationId: getMessageStatus
+      summary: Delivery status of a message (never its content)
+      x-scopes: [messages:read]
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Status and delivery events.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageStatus' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /segments:
+    get:
+      tags: [Insights]
+      operationId: listSegments
+      summary: Segments with their current size
+      x-scopes: [segments:read]
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      responses:
+        '200':
+          description: Segments.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties: { id: { type: string }, name: { type: string }, description: { type: string }, size: { type: integer }, updated_at: { type: string, format: date-time } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+  /campaigns:
+    get:
+      tags: [Insights]
+      operationId: listCampaigns
+      summary: Campaigns with delivery stats
+      x-scopes: [campaigns:read]
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      responses:
+        '200':
+          description: Campaigns.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/CampaignSummary' } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+  /campaigns/{campaignId}:
+    get:
+      tags: [Insights]
+      operationId: getCampaign
+      summary: One campaign with delivery stats
+      x-scopes: [campaigns:read]
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The campaign.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CampaignSummary' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /reports/overview:
+    get:
+      tags: [Insights]
+      operationId: reportsOverview
+      summary: Headline numbers for the last 30 days
+      x-scopes: [reports:read]
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      responses:
+        '200':
+          description: Overview.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
     apiKey:
       type: http
       scheme: bearer
-      description: Static API key sent as a bearer token.
-      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:209-214; test/api.test.js:31' }
+      description: |
+        API key sent as a bearer token (`Authorization: Bearer pe_<prefix>_<secret>`), created in the console under
+        Integrations. Each key carries scopes; an operation's `x-scopes` lists what it needs, and a key without them
+        gets 403 with `details.code = insufficient_scope`. Keys created before scopes existed keep
+        contacts:write, consent:write, events:write and messages:send.
+      x-evidence: { status: CONFIRMED, source: 'orbit@dbc6cc9 src/routes/api.js:209-214; test/api.test.js:31. Scopes: pure-engage apps/api/src/plugins/auth.ts; apps/api/test/integrations.test.ts' }
   responses:
     Error:
       description: Error.
@@ -226,3 +419,89 @@ components:
               status: { type: string }
               reason: { type: [string, 'null'] }
               error: { type: string }
+    ConsentMap:
+      type: object
+      description: Channel → purpose → granted or denied. Only an explicit `granted` permits sending.
+      x-evidence: { status: CONFIRMED, source: 'pure-engage packages/shared/src/consent.ts' }
+      additionalProperties:
+        type: object
+        additionalProperties: { type: string, enum: [granted, denied] }
+    ConsentRequest:
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      allOf:
+        - $ref: '#/components/schemas/ContactRef'
+        - type: object
+          required: [consent]
+          properties:
+            consent: { $ref: '#/components/schemas/ConsentMap' }
+    ContactView:
+      type: object
+      description: |
+        Without contacts:read_pii, names are initials, email and phone are masked and only `attribute_names` are
+        returned (attributes can hold health details). With it, full values and `attributes`.
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      required: [id, masked]
+      properties:
+        id: { type: string }
+        external_id: { type: [string, 'null'] }
+        email: { type: [string, 'null'] }
+        phone: { type: [string, 'null'] }
+        first_name: { type: [string, 'null'] }
+        last_name: { type: [string, 'null'] }
+        preferred_language: { type: [string, 'null'] }
+        timezone: { type: [string, 'null'] }
+        consent: { $ref: '#/components/schemas/ConsentMap' }
+        attributes: { type: object, additionalProperties: true }
+        attribute_names: { type: array, items: { type: string } }
+        masked: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    TriggerRequest:
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      allOf:
+        - $ref: '#/components/schemas/ContactRef'
+        - type: object
+          properties:
+            attributes: { type: object, additionalProperties: true, description: 'Profile updates (needs contacts:write).' }
+            properties: { type: object, additionalProperties: true, description: 'Trigger event properties, e.g. the entry key and dates used by wait-until steps.' }
+            idempotency_key: { type: string }
+    TriggerResult:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      required: [contact_id, event_id, event_name, duplicate]
+      properties:
+        contact_id: { type: string }
+        event_id: { type: string }
+        event_name: { type: string }
+        duplicate: { type: boolean }
+    MessageStatus:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      required: [id, channel, status]
+      properties:
+        id: { type: string }
+        contact_id: { type: string }
+        template_id: { type: [string, 'null'] }
+        campaign_id: { type: [string, 'null'] }
+        channel: { type: string, enum: [email, sms] }
+        status: { type: string, enum: [queued, deferred, sending, sent, delivered, failed, suppressed] }
+        status_reason: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+        sent_at: { type: [string, 'null'], format: date-time }
+        opened_at: { type: [string, 'null'], format: date-time }
+        clicked_at: { type: [string, 'null'], format: date-time }
+        events:
+          type: array
+          items:
+            type: object
+            properties: { type: { type: string }, at: { type: string, format: date-time } }
+    CampaignSummary:
+      type: object
+      x-evidence: { status: CONFIRMED, source: 'pure-engage apps/api/src/routes/v1.ts; apps/api/test/integrations.test.ts' }
+      properties:
+        id: { type: string }
+        name: { type: string }
+        status: { type: string }
+        scheduled_at: { type: [string, 'null'], format: date-time }
+        completed_at: { type: [string, 'null'], format: date-time }
+        stats: { type: object, additionalProperties: true }
