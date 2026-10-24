@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Activity, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, BookOpen, Bot, FileSpreadsheet, HeartPulse, KeyRound, Plug, Zap, type LucideIcon,
+  Activity, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, BookOpen, Bot, Cloud, FileSpreadsheet, HeartPulse, KeyRound, Plug, Zap, type LucideIcon,
 } from 'lucide-react';
 import { api } from '../../api/client.ts';
 import type { IntegrationsOverview } from '../../api/types.ts';
 import { hasRole, useUser } from '../../auth/auth.tsx';
 import { IconChip, KpiTile, PageHeader, Pill, type Tone } from '../../components/bits.tsx';
 import { RequestLog } from './common.tsx';
+import { salesforceTone } from './SalesforcePage.tsx';
 
 interface Card { id: string; icon: LucideIcon; to: string | null; tone: Tone; status: (o: IntegrationsOverview | undefined) => { tone: Tone; label: string } | null; adminOnly?: boolean }
 
@@ -25,6 +26,11 @@ export function IntegrationsPage() {
     { id: 'inbound', icon: ArrowDownToLine, to: '/integrations/inbound', tone: 'info', adminOnly: true, status: (x) => (x ? count(x.inbound_webhooks.enabled, 'integrations.status.sources') : null) },
     { id: 'outbound', icon: ArrowUpFromLine, to: '/integrations/outbound', tone: 'sms', adminOnly: true, status: (x) => (x ? count(x.outbound_webhooks.enabled, 'integrations.status.endpoints') : null) },
     { id: 'ai', icon: Bot, to: '/integrations/ai', tone: 'primary', adminOnly: true, status: (x) => (x?.ai_connections ? { tone: 'success', label: t('integrations.status.connected', { count: x.ai_connections }) } : { tone: 'info', label: t('integrations.status.new') }) },
+    {
+      id: 'salesforce', icon: Cloud, to: '/integrations/salesforce', tone: 'info', adminOnly: true,
+      status: (x) => (!x?.salesforce ? null : x.salesforce.status === 'not_set_up' || x.salesforce.status === 'not_connected'
+        ? { tone: 'muted', label: t('integrations.status.notSetUp') } : { tone: salesforceTone(x.salesforce.status), label: t(`integrations.salesforce.state.${x.salesforce.status}`) }),
+    },
     { id: 'nocode', icon: Zap, to: '/integrations/no-code', tone: 'warning', status: () => null },
     { id: 'import', icon: FileSpreadsheet, to: '/contacts/import', tone: 'success', status: () => null },
     { id: 'reference', icon: BookOpen, to: '/integrations/reference', tone: 'muted', status: () => null },

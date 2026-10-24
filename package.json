@@ -17,7 +17,7 @@
     "build": "npm run build --workspaces --if-present",
     "e2e:console": "npm run e2e -w @pure-engage/console",
     "e2e:purenet": "bash scripts/e2e-purenet.sh",
-    "lint:openapi": "REDOCLY_TELEMETRY=off redocly lint docs/contracts/purenet.openapi.yaml docs/contracts/purenet-oauth.openapi.yaml docs/contracts/platform-ingest.openapi.yaml",
+    "lint:openapi": "REDOCLY_TELEMETRY=off redocly lint docs/contracts/purenet.openapi.yaml docs/contracts/purenet-oauth.openapi.yaml docs/contracts/platform-ingest.openapi.yaml docs/contracts/salesforce.openapi.yaml",
     "lint:asyncapi": "SUPPRESS_NO_CONFIG_WARNING=1 asyncapi validate docs/contracts/purenet-events.asyncapi.yaml && asyncapi validate docs/contracts/platform-webhooks.asyncapi.yaml",
     "lint:contracts": "npm run lint:openapi && npm run lint:asyncapi",
     "check:evidence": "node scripts/check-evidence.mjs",
