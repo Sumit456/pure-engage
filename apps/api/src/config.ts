@@ -68,6 +68,8 @@ const schema = z.object({
   PE_SECRET_KEY: z.string().min(32, 'PE_SECRET_KEY must be at least 32 characters').optional(),
   /** Lets outbound webhooks target private/loopback addresses (local development and tests only). */
   PE_WEBHOOKS_ALLOW_PRIVATE: bool.default('false'),
+  /** Lets the Salesforce connector use any login host and instance URL, including http and loopback (tests and local development only). */
+  PE_SALESFORCE_ALLOW_ANY_HOST: bool.default('false'),
 
   // Retention (days). Message bodies are personal data; delivery metadata is kept.
   PE_MESSAGE_BODY_RETENTION_DAYS: z.coerce.number().int().min(1).default(90),
@@ -98,6 +100,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (c.NODE_ENV === 'production' && !c.PE_TRACKING_SECRET) throw new Error('Invalid configuration: PE_TRACKING_SECRET is required in production');
   if (c.NODE_ENV === 'production' && !c.PE_SECRET_KEY) throw new Error('Invalid configuration: PE_SECRET_KEY is required in production');
   if (c.NODE_ENV === 'production' && c.PE_WEBHOOKS_ALLOW_PRIVATE) throw new Error('Invalid configuration: PE_WEBHOOKS_ALLOW_PRIVATE cannot be used in production');
+  if (c.NODE_ENV === 'production' && c.PE_SALESFORCE_ALLOW_ANY_HOST) throw new Error('Invalid configuration: PE_SALESFORCE_ALLOW_ANY_HOST cannot be used in production');
   return {
     ...c, trackingSecret: c.PE_TRACKING_SECRET ?? DEV_TRACKING_SECRET, secretKey: deriveSecretKey(c.PE_SECRET_KEY ?? DEV_SECRET_KEY_SEED),
     consoleUrl: (c.PE_CONSOLE_URL ?? c.PE_PUBLIC_URL).replace(/\/$/, ''),

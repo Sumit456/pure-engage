@@ -52,7 +52,8 @@ export function createIntegrationsService({ db, config, ingest, clock }: { db: K
 
   async function getRow(id: string) {
     if (!z.string().uuid().safeParse(id).success) throw notFound('Integration');
-    const row = await db.selectFrom('integrations').selectAll().where('id', '=', id).executeTakeFirst();
+    // Salesforce connections are managed by their own service (salesforce/service.ts), never through this API.
+    const row = await db.selectFrom('integrations').selectAll().where('id', '=', id).where('kind', '=', 'inbound_webhook').executeTakeFirst();
     if (!row) throw notFound('Integration');
     return row;
   }
@@ -69,7 +70,7 @@ export function createIntegrationsService({ db, config, ingest, clock }: { db: K
     url,
 
     async list() {
-      const rows = await db.selectFrom('integrations').select(publicColumns).orderBy('created_at', 'desc').execute();
+      const rows = await db.selectFrom('integrations').select(publicColumns).where('kind', '=', 'inbound_webhook').orderBy('created_at', 'desc').execute();
       return rows.map(withUrl);
     },
 

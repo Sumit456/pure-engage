@@ -20,6 +20,7 @@ import { createContactImportService } from './contact-import.ts';
 import { createAssetsService } from './assets.ts';
 import { createIntegrationsService } from './integrations.ts';
 import { createOAuthService } from './oauth.ts';
+import { createSalesforceService } from './salesforce/service.ts';
 
 export interface ServiceOptions {
   clock?: () => Date;
@@ -46,15 +47,19 @@ export function createServices(db: DB, config: Config, { clock = () => new Date(
   const assets = createAssetsService(db);
   const integrations = createIntegrationsService({ db, config, ingest, clock });
   const oauth = createOAuthService(db, clock);
+  // Tests drive retries directly, so the client's short in-call backoff doesn't sleep there.
+  const salesforce = createSalesforceService({ db, config, contacts, integrations, clock, ...(log ? { log } : {}), ...(config.NODE_ENV === 'test' ? { sleep: async () => {} } : {}) });
   const worker = createWorker([
     { name: 'journey-events', run: () => journeys.processEvents() },
     { name: 'journey-steps', run: () => journeys.runDue() },
     { name: 'campaigns', run: () => campaigns.processDue() },
     { name: 'dispatch', run: () => delivery.dispatchOnce() },
     { name: 'webhooks', run: () => webhooks.dispatchDue() },
+    { name: 'salesforce-pull', run: () => salesforce.pullDue() },
+    { name: 'salesforce-push', run: () => salesforce.pushDue() },
     { name: 'retention', run: async () => { await retention.runIfDue(); await oauth.prune(); } },
   ], log);
-  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, journeys, webhooks, reports, retention, activity, contactImport, assets, integrations, oauth, worker };
+  return { auth, contacts, events, ingest, templates, signer, providers, delivery, segments, campaigns, journeys, webhooks, reports, retention, activity, contactImport, assets, integrations, oauth, salesforce, worker };
 }
 
 export type Services = ReturnType<typeof createServices>;

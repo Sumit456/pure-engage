@@ -26,6 +26,7 @@ import { v1Routes } from './routes/v1.ts';
 import { integrationRoutes } from './routes/integrations.ts';
 import { oauthRoutes, publicCors } from './routes/oauth.ts';
 import { mcpRoutes } from './routes/mcp.ts';
+import { salesforceRoutes } from './routes/salesforce.ts';
 
 export interface AppDeps {
   config: Config;
@@ -129,6 +130,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(integrationRoutes);
   await app.register(oauthRoutes);
   await app.register(mcpRoutes);
+  await app.register(salesforceRoutes);
   if (config.PURENET_WEBHOOK_SECRET) {
     await app.register(purenetRoutes, { webhookSecret: config.PURENET_WEBHOOK_SECRET, env: deps.purenetEnv });
   }

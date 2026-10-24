@@ -56,7 +56,8 @@ export interface InboundWebhookConfig {
 
 export interface IntegrationsTable {
   id: Generated<string>;
-  kind: 'inbound_webhook';
+  /** `salesforce` rows keep `{}` in config; their settings live in salesforce_connections. */
+  kind: 'inbound_webhook' | 'salesforce';
   name: string;
   config: ColumnType<InboundWebhookConfig, InboundWebhookConfig | string | undefined, InboundWebhookConfig | string>;
   secret_encrypted: string;
@@ -352,6 +353,88 @@ export interface WebhookDeliveriesTable {
   updated_at: Timestamp;
 }
 
+// ---------- Salesforce connector (ADR-0009) ----------
+
+export type SalesforceObject = 'Contact' | 'Lead';
+export type SalesforceActivity = 'sent' | 'open' | 'click' | 'unsubscribe';
+
+export interface SalesforceObjectSettings {
+  enabled: boolean;
+  /** Salesforce field whose value becomes the contact's external_id (default `Id`). */
+  external_id_field: string;
+  /** Extra Salesforce fields copied into contact attributes. */
+  fields: { field: string; attribute: string }[];
+  /** Checkbox or picklist fields that grant or deny a channel × purpose. */
+  consent: { field: string; channel: 'email' | 'sms'; purpose: 'care' | 'marketing'; unchecked_denies: boolean }[];
+}
+
+export interface SalesforceSettings {
+  objects: Record<SalesforceObject, SalesforceObjectSettings>;
+  /** `DoNotCall = true` denies SMS marketing. */
+  do_not_call_denies_sms: boolean;
+  write_back: { activities: SalesforceActivity[]; email_opt_out: boolean };
+  sync_minutes: number;
+}
+
+export interface SalesforcePullCounts { created: number; updated: number; unchanged: number; skipped: number; errors: number; warnings: number }
+export interface SalesforceLastRun { at: string; duration_ms: number; objects: Partial<Record<SalesforceObject, SalesforcePullCounts>>; error: string | null }
+
+export interface SalesforceConnectionsTable {
+  integration_id: string;
+  login_host: string;
+  consumer_key: string;
+  status: Generated<'not_connected' | 'connected' | 'error'>;
+  refresh_token_encrypted: string | null;
+  access_token_encrypted: string | null;
+  instance_url: string | null;
+  org_id: string | null;
+  sf_user_id: string | null;
+  username: string | null;
+  connected_at: NullableTimestamp;
+  connected_by: string | null;
+  settings: ColumnType<SalesforceSettings, SalesforceSettings | string, SalesforceSettings | string>;
+  pull_state: ColumnType<{ cursors?: Partial<Record<SalesforceObject, string>> }, string | undefined, string>;
+  last_run: ColumnType<SalesforceLastRun | null, string | null | undefined, string | null>;
+  last_error: string | null;
+  last_sync_at: NullableTimestamp;
+  next_sync_at: NullableTimestamp;
+  lease_until: NullableTimestamp;
+  push_event_cursor: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+  push_consent_cursor: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+export interface SalesforceOAuthStatesTable {
+  state_hash: string;
+  integration_id: string;
+  user_id: string;
+  session_hash: string;
+  verifier_encrypted: string;
+  expires_at: Timestamp;
+  created_at: Timestamp;
+}
+
+export interface SalesforceOutboxTable {
+  id: Generated<string>;
+  integration_id: string;
+  kind: 'task' | 'opt_out';
+  /** `event:<message_events.id>` or `consent:<consent_history.id>`: one row per source item. */
+  source_key: string;
+  contact_id: string | null;
+  sf_object: string;
+  sf_id: string;
+  /** The Salesforce fields to write (never message bodies or contact values). */
+  payload: Json<Record<string, unknown>>;
+  status: Generated<'pending' | 'sent' | 'failed'>;
+  attempts: Generated<number>;
+  next_attempt_at: NullableTimestamp;
+  error: string | null;
+  sf_record_id: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
 export interface Database {
   app_settings: AppSettingsTable;
   users: UsersTable;
@@ -379,6 +462,9 @@ export interface Database {
   oauth_clients: OAuthClientsTable;
   oauth_codes: OAuthCodesTable;
   oauth_grants: OAuthGrantsTable;
+  salesforce_connections: SalesforceConnectionsTable;
+  salesforce_oauth_states: SalesforceOAuthStatesTable;
+  salesforce_outbox: SalesforceOutboxTable;
 }
 
 export type Template = Selectable<TemplatesTable>;
@@ -390,6 +476,8 @@ export type Enrollment = Selectable<JourneyEnrollmentsTable>;
 export type Webhook = Selectable<WebhooksTable>;
 export type WebhookDelivery = Selectable<WebhookDeliveriesTable>;
 export type Integration = Selectable<IntegrationsTable>;
+export type SalesforceConnection = Selectable<SalesforceConnectionsTable>;
+export type SalesforceOutboxItem = Selectable<SalesforceOutboxTable>;
 
 export type User = Selectable<UsersTable>;
 export type Contact = Selectable<ContactsTable>;
